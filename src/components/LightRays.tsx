@@ -26,11 +26,11 @@ const getAnchorAndDir = (origin: string, w: number, h: number) => {
 const LightRays = ({
   raysOrigin = 'top-center',
   raysColor = DEFAULT_COLOR,
-  raysSpeed = 0.2, // Slowed down for a portfolio vibe
+  raysSpeed = 1,
   lightSpread = 1,
-  rayLength = 2,
+  rayLength = 20,
   pulsating = true,
-  fadeDistance = 1.0,
+  fadeDistance = 10,
   saturation = 1.0,
   followMouse = true,
   mouseInfluence = 0.5,
@@ -102,6 +102,7 @@ const LightRays = ({
           gl_Position = vec4(position, 0.0, 1.0);
         }`;
 
+      // --- THIS STRING WAS CUT OFF BEFORE ---
       const frag = `precision highp float;
         uniform float iTime;
         uniform vec2  iResolution;
@@ -167,7 +168,16 @@ const LightRays = ({
             fragColor.rgb = mix(vec3(gray), fragColor.rgb, saturation);
           }
           fragColor.rgb *= raysColor;
-        }`;
+        }
+
+        // --- THIS WAS MISSING ---
+        void main() {
+          vec4 color;
+          mainImage(color, gl_FragCoord.xy);
+          gl_FragColor = color;
+        }
+        // ------------------------
+      `;
 
       const uniforms = {
         iTime: { value: 0 },
@@ -228,7 +238,8 @@ const LightRays = ({
         if (animationIdRef.current) cancelAnimationFrame(animationIdRef.current);
         window.removeEventListener('resize', updatePlacement);
         if (renderer && renderer.gl) {
-            renderer.gl.getExtension('WEBGL_lose_context')?.loseContext();
+            const ext = renderer.gl.getExtension('WEBGL_lose_context');
+            if (ext) ext.loseContext();
         }
         rendererRef.current = null;
         uniformsRef.current = null;

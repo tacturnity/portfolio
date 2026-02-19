@@ -9,7 +9,7 @@ import DockNav from './components/DockNav';
 import About from './components/About';
 import Lightbox from './components/Lightbox';
 import GradualBlur from './components/GradualBlur';
-import DotGrid from './components/DotGrid'; // <-- Imported DotGrid
+import LightRays from './components/LightRays'; // <-- Imported LightRays
 
 const NAV_ITEMS = ['All Work', 'Animals', 'Misc', 'People', 'Panos', 'About Me'];
 
@@ -68,15 +68,16 @@ export default function App() {
   const currentIndex = allPhotos.findIndex(p => p.id === selectedPhoto?.id);
 
   return (
-    <div className="min-h-screen bg-black text-white relative">
+    <div className="min-h-screen text-white relative">
       
       {/* BACKGROUND LAYER */}
-      <DotGrid 
-        dotSize={2} 
-        gap={30} 
-        baseColor="#222"     // Subtle dark gray dots
-        activeColor="#fb7185" // Rose-400 glow on hover
-        proximity={120}
+      <LightRays 
+        raysColor="#fb7185" // Your Rose-400 theme color
+        raysSpeed={0.2}
+        raysOrigin="top-center"
+        lightSpread={0.5}
+        rayLength={0.8}     // Longer rays
+        maskStrength={0.5}
       />
 
       {/* 1. HEADER: Only shows if NO photo is selected */}
