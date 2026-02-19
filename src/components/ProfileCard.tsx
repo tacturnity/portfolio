@@ -40,7 +40,8 @@ const adjust = (v: number, fMin: number, fMax: number, tMin: number, tMax: numbe
 
 const ProfileCardComponent: React.FC<ProfileCardProps> = ({
   avatarUrl = 'https://picsum.photos/id/64/800/1200',
-  iconUrl = 'https://raw.githubusercontent.com/simeydotme/pokemon-cards-css/main/public/img/overlay_glass.png',
+  // --- FIX APPLIED: Using working grain.webp as a fallback for the dead overlay_glass link ---
+  iconUrl = 'https://raw.githubusercontent.com/simeydotme/pokemon-cards-css/main/public/img/grain.webp',
   grainUrl = 'https://raw.githubusercontent.com/simeydotme/pokemon-cards-css/main/public/img/grain.webp',
   innerGradient,
   behindGlowEnabled = true,
@@ -55,7 +56,7 @@ const ProfileCardComponent: React.FC<ProfileCardProps> = ({
   title = "Visual Artist",
   handle = "cookaracha",
   status = "Active",
-  contactText = "gay",
+  contactText = "Get in touch",
   showUserInfo = true,
   onContactClick
 }) => {
@@ -171,7 +172,7 @@ const ProfileCardComponent: React.FC<ProfileCardProps> = ({
       '--icon': `url(${iconUrl})`,
       '--grain': `url(${grainUrl})`,
       '--inner-gradient': innerGradient ?? DEFAULT_INNER_GRADIENT,
-      '--behind-glow-color': behindGlowColor ?? 'rgba(251, 113, 133, 0.4)', // Thematic Rose-400
+      '--behind-glow-color': behindGlowColor ?? 'rgba(251, 113, 133, 0.4)',
       '--behind-glow-size': behindGlowSize ?? '60%'
     } as any}>
       {behindGlowEnabled && <div className="pc-behind" />}
