@@ -154,10 +154,11 @@ for cat in CATEGORIES:
                 if url_rel: url_rel += '/'
 
                 photo_list.append({
-                    # Removing ID here, we will assign it after sorting
-                    "url_large": f"/photos/{cat}/{url_rel}{file}",
-                    "url_medium": f"/optimized2/{cat}/{url_rel}medium/{webp_name}", # Check your folder name here!
-                    "url_small": f"/optimized2/{cat}/{url_rel}small/{webp_name}",
+                    # ADD "/portfolio" to the start of these 3 lines:
+                    "url_large": f"/portfolio/photos/{cat}/{url_rel}{file}",
+                    "url_medium": f"/portfolio/optimized2/{cat}/{url_rel}medium/{webp_name}",
+                    "url_small": f"/portfolio/optimized2/{cat}/{url_rel}small/{webp_name}",
+                    
                     "category": cat.capitalize(),
                     "title": file.split('.')[0].replace('_', ' ').replace('-', ' ').title(),
                     "date": date, "iso": iso, "aperture": ap, "shutter": shut,
