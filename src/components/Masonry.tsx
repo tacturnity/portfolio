@@ -31,25 +31,23 @@ export default function Masonry({ items, onPhotoClick, enableCrop, enablePanoSpa
     const columnWidth = (width - (columns - 1) * gap) / columns;
     const colHeights = new Array(columns).fill(0);
 
-    // --- 1. PRE-CALCULATE BALANCE (The Equalizer) ---
-    // We need to know the total imbalance before we start looping.
-    // Positive balance = Too many Landscapes (Need to swap Land -> Port)
-    // Negative balance = Too many Portraits (Need to swap Port -> Land)
+    // --- 1. EQUALIZER COUNTER ---
     let balanceCounter = 0;
-    
+    let landscapeCount = 0;
+    let portraitCount = 0;
+
     if (enableCrop) {
       items.forEach((item: any) => {
         const isPano = item.category?.toLowerCase() === 'panos';
-        // We exclude Panos from the equalizer count to protect them
         if (!isPano) {
           const w = parseFloat(item.width) || 1000;
           const h = parseFloat(item.height) || 1000;
-          if (w >= h) balanceCounter++; // Found a Landscape
-          else balanceCounter--;        // Found a Portrait
+          if (w >= h) landscapeCount++;
+          else portraitCount++;
         }
       });
-      // We divide by 2 because swapping 1 image changes the relative difference by 2
-      balanceCounter = Math.round(balanceCounter / 2);
+      // Calculate how many swaps needed to reach equilibrium
+      balanceCounter = Math.round((landscapeCount - portraitCount) / 2);
     }
 
     // --- 2. LAYOUT LOOP ---
@@ -62,31 +60,31 @@ export default function Masonry({ items, onPhotoClick, enableCrop, enablePanoSpa
 
       let span = 1;
       let targetAspectRatio = naturalAspectRatio;
+      
+      // --- HI-RES LOGIC ---
+      // Default to the optimized medium size
+      let displaySrc = item.gridSrc; 
 
       if (enableCrop) {
-        // --- EQUALIZED CROP LOGIC ---
-
         if (isPano && enablePanoSpan) {
-          // Exception: Panos span full width if enabled
           span = columns;
           targetAspectRatio = naturalAspectRatio;
+          // IF SPANNING IS ON: Load the High-Res (editedSrc) version
+          displaySrc = item.editedSrc; 
         } else {
-          // Determine if we need to force a swap to equalize
+          // EQUALIZER LOGIC
           let forceOrientation = isNaturalLandscape ? 'landscape' : 'portrait';
 
           if (!isPano) {
             if (balanceCounter > 0 && isNaturalLandscape) {
-              // We have too many Landscapes, force this one to Portrait
               forceOrientation = 'portrait';
               balanceCounter--; 
             } else if (balanceCounter < 0 && !isNaturalLandscape) {
-              // We have too many Portraits, force this one to Landscape
               forceOrientation = 'landscape';
               balanceCounter++;
             }
           }
 
-          // Apply 4:3 or 3:4 Ratios based on result
           if (forceOrientation === 'landscape') {
              targetAspectRatio = 4 / 3;
           } else {
@@ -94,18 +92,18 @@ export default function Masonry({ items, onPhotoClick, enableCrop, enablePanoSpa
           }
         }
       } else {
-        // --- NATURAL LOGIC (Crop OFF) ---
+        // CROP DISABLED
         if (isPano && enablePanoSpan) {
           span = columns;
+          // IF SPANNING IS ON: Load the High-Res version
+          displaySrc = item.editedSrc;
         }
         targetAspectRatio = naturalAspectRatio;
       }
 
-      // 3. Calculate Dimensions
       const finalWidth = (columnWidth * span) + (gap * (span - 1));
       const targetHeight = finalWidth / targetAspectRatio;
 
-      // 4. Waterfall Placement
       let targetCol = 0;
       let minY = Infinity;
       for (let i = 0; i <= columns - span; i++) {
@@ -119,12 +117,12 @@ export default function Masonry({ items, onPhotoClick, enableCrop, enablePanoSpa
       const x = targetCol * (columnWidth + gap);
       const y = minY;
 
-      // 5. Update heights
       for (let i = targetCol; i < targetCol + span; i++) {
         colHeights[i] = y + targetHeight + gap;
       }
 
-      return { ...item, x, y, w: finalWidth, h: targetHeight };
+      // Return item with the dynamic 'displaySrc'
+      return { ...item, x, y, w: finalWidth, h: targetHeight, displaySrc };
     });
   }, [items, columns, width, enableCrop, enablePanoSpan]);
 
@@ -143,7 +141,8 @@ export default function Masonry({ items, onPhotoClick, enableCrop, enablePanoSpa
           }}
         >
           <TiltedCard 
-            imageSrc={item.gridSrc} 
+            // USE THE DYNAMIC SOURCE HERE
+            imageSrc={item.displaySrc} 
             imageWidth="100%"
             imageHeight="100%"
             onClick={() => onPhotoClick(item)}
