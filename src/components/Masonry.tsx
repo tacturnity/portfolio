@@ -23,12 +23,11 @@ export default function Masonry({ items, onPhotoClick, enableCrop, enablePanoSpa
     };
   }, []);
 
-  const columns = width >= 1500 ? 5 : width >= 1000 ? 4 : width >= 600 ? 3 : 2;
-
+  const columns = width >= 1500 ? 5 : width >= 1000 ? 4 : width >= 768 ? 3 : 2;
   const gridItems = useMemo(() => {
     if (width === 0 || !items || items.length === 0) return [];
     
-    const gap = 20;
+    const gap = width < 768 ? 10 : 20;
     const columnWidth = (width - (columns - 1) * gap) / columns;
     const colHeights = new Array(columns).fill(0);
     

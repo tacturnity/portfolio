@@ -42,11 +42,15 @@ export default function DockNav({
   return (
     <nav className="fixed bottom-8 left-0 right-0 z-50 flex justify-center pointer-events-none font-['Lexend']">
       <motion.div
-        ref={containerRef}
-        onMouseMove={(e) => mouseX.set(e.pageX)}
-        onMouseLeave={() => mouseX.set(Infinity)}
-        className="pointer-events-auto relative flex items-center gap-2 px-4 py-3 rounded-2xl bg-black/60 backdrop-blur-xl border border-white/10 shadow-2xl h-14"
-      >
+  ref={containerRef}
+  onMouseMove={(e) => mouseX.set(e.pageX)}
+  onMouseLeave={() => mouseX.set(Infinity)}
+  className="pointer-events-auto relative flex items-center gap-2 px-4 py-3 rounded-2xl bg-black/60 backdrop-blur-xl border border-white/10 shadow-2xl h-14 overflow-x-auto no-scrollbar max-w-[95vw] sm:max-w-none"
+  style={{
+    scrollbarWidth: 'none', // Hide for Firefox
+    msOverflowStyle: 'none' // Hide for IE
+  }}
+>
         {/* TRUE FOCUS FRAME */}
         <motion.div
           className="absolute pointer-events-none flex items-center justify-center"

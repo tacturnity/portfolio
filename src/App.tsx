@@ -9,14 +9,14 @@ import DockNav from './components/DockNav';
 import About from './components/About';
 import Lightbox from './components/Lightbox';
 import GradualBlur from './components/GradualBlur';
-import LightRays from './components/LightRays'; // <-- Imported LightRays
+import LightRays from './components/LightRays'; 
 
 const NAV_ITEMS = ['All Work', 'Animals', 'Misc', 'People', 'Panos', 'About Me'];
 
 export default function App() {
   // 1. UI & Navigation State
   const [activeView, setActiveView] = useState('All Work');
-  const [direction, setDirection] = useState(0); // 1 for right, -1 for left
+  const [direction, setDirection] = useState(0); 
   const [selectedPhoto, setSelectedPhoto] = useState<any>(null);
   
   // 2. Settings State
@@ -31,13 +31,14 @@ export default function App() {
     setActiveView(newView);
   };
 
-  // 4. Process Photo Data
+  // 4. Process Photo Data (With shutterSpeed mapping)
   const allPhotos = useMemo(() => {
     return photoData.map((p: any) => ({
       ...p,
       gridSrc: p.url_medium,
       editedSrc: p.url_large,
       dateCaptured: p.date || "Unknown",
+      shutterSpeed: p.shutter, // Maps JSON "shutter" to "shutterSpeed"
     })).sort((a: any, b: any) => 
       new Date(b.dateCaptured).getTime() - new Date(a.dateCaptured).getTime()
     );
@@ -49,7 +50,13 @@ export default function App() {
     return allPhotos.filter(p => p.category.toLowerCase() === activeView.toLowerCase());
   }, [activeView, allPhotos]);
 
-  // 6. Content Animation Variants
+  // 6. Index Logic for Lightbox
+  const currentIndex = useMemo(() => {
+    if (!selectedPhoto) return -1;
+    return filteredPhotos.findIndex(p => p.id === selectedPhoto.id);
+  }, [filteredPhotos, selectedPhoto]);
+
+  // 7. Content Animation Variants
   const variants = {
     enter: (direction: number) => ({
       x: direction > 0 ? 100 : -100,
@@ -65,22 +72,20 @@ export default function App() {
     })
   };
 
-  const currentIndex = allPhotos.findIndex(p => p.id === selectedPhoto?.id);
-
   return (
     <div className="min-h-screen text-white relative">
       
       {/* BACKGROUND LAYER */}
       <LightRays 
-        raysColor="#fb7185" // Your Rose-400 theme color
+        raysColor="#fb7185" 
         raysSpeed={0.2}
         raysOrigin="top-center"
         lightSpread={0.5}
-        rayLength={0.8}     // Longer rays
+        rayLength={0.8}
         maskStrength={0.5}
       />
 
-      {/* 1. HEADER: Only shows if NO photo is selected */}
+      {/* 1. HEADER */}
       <AnimatePresence>
         {!selectedPhoto && (
           <motion.div
@@ -100,9 +105,8 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* 2. MAIN CONTENT: Animated transitions between views */}
-      {/* Added 'relative z-10' to ensure content sits ON TOP of the canvas and changed padding to pt-52 */}
-      <main className="pt-52 pb-40 px-4 md:px-8 relative z-10">
+      {/* 2. MAIN CONTENT (37 mobile / 52 desktop) */}
+      <main className="pt-37 md:pt-68 pb-40 px-4 md:px-8 relative z-10">
         <AnimatePresence mode="wait" custom={direction}>
           <motion.div
             key={activeView}
@@ -131,8 +135,7 @@ export default function App() {
         </AnimatePresence>
       </main>
 
-      {/* 3. NAVIGATION & UI OVERLAYS */}
-      {/* If these components also need to sit above the grid, ensure they have proper z-indexes in their respective files */}
+      {/* 3. NAVIGATION */}
       <DockNav 
         items={NAV_ITEMS}
         activeItem={activeView}
@@ -141,15 +144,21 @@ export default function App() {
 
       <GradualBlur height="15vh" strength={10} />
 
-      {/* 4. LIGHTBOX */}
+      {/* 4. LIGHTBOX (FIXED PREVIDX ERROR) */}
       {selectedPhoto && (
         <Lightbox 
           photo={selectedPhoto}
           onClose={() => setSelectedPhoto(null)}
-          onNext={() => setSelectedPhoto(allPhotos[(currentIndex + 1) % allPhotos.length])}
-          onPrev={() => setSelectedPhoto(allPhotos[(currentIndex - 1 + allPhotos.length) % allPhotos.length])}
-          hasNext={allPhotos.length > 1}
-          hasPrev={allPhotos.length > 1}
+          onNext={() => {
+            const nextIdx = (currentIndex + 1) % filteredPhotos.length;
+            setSelectedPhoto(filteredPhotos[nextIdx]);
+          }}
+          onPrev={() => {
+            const prevIdx = (currentIndex - 1 + filteredPhotos.length) % filteredPhotos.length;
+            setSelectedPhoto(filteredPhotos[prevIdx]);
+          }}
+          hasNext={filteredPhotos.length > 1}
+          hasPrev={filteredPhotos.length > 1}
         />
       )}
     </div>

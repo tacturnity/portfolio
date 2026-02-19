@@ -42,13 +42,20 @@ const TextPressure: React.FC<TextPressureProps> = ({
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
-  const setSize = useCallback(() => {
-    if (!containerRef.current) return;
-    const { width: containerW } = containerRef.current.getBoundingClientRect();
-    let newFontSize = containerW / (text.length / 1.5);
-    setFontSize(Math.max(newFontSize, minFontSize));
-  }, [text, minFontSize]);
-
+  // Inside TextPressure.tsx - Update the setSize function
+const setSize = useCallback(() => {
+  if (!containerRef.current) return;
+  const { width: containerW } = containerRef.current.getBoundingClientRect();
+  
+  // Adjusted logic: smaller multiplier for mobile
+  const isMobile = window.innerWidth < 768;
+  const multiplier = isMobile ? 0.8 : 1.5; 
+  let newFontSize = (containerW / (text.length / multiplier));
+  
+  // Clamp the font size so it doesn't get ridiculously huge or tiny
+  const clampedSize = Math.min(Math.max(newFontSize, minFontSize), isMobile ? 40 : 120);
+  setFontSize(clampedSize);
+}, [text, minFontSize]);
   useEffect(() => {
     setSize();
     window.addEventListener('resize', setSize);

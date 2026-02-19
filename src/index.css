@@ -15,3 +15,10 @@ body {
   /* Optional: adds a tiny bit of protection if the blend is too aggressive */
   text-shadow: 0px 0px 1px rgba(0,0,0,0.1); 
 }
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
