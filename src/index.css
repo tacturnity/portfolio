@@ -1,0 +1,17 @@
+@import url('https://fonts.googleapis.com/css2?family=Lexend:wght@100..900&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-lexend: "Lexend", sans-serif;
+}
+
+body {
+  @apply bg-black text-white antialiased;
+  font-family: 'Lexend', sans-serif;
+  margin: 0;
+}
+.mix-blend-difference {
+  mix-blend-mode: difference;
+  /* Optional: adds a tiny bit of protection if the blend is too aggressive */
+  text-shadow: 0px 0px 1px rgba(0,0,0,0.1); 
+}
