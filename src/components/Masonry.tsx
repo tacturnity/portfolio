@@ -21,7 +21,7 @@ export default function Masonry({ items, onPhotoClick, enableCrop, enablePanoSpa
     };
   }, []);
 
-  // Responsive column count
+  // Columns breakpoint logic
   const columns = width >= 1500 ? 5 : width >= 1000 ? 4 : width >= 768 ? 3 : 2;
 
   const gridItems = useMemo(() => {
@@ -30,43 +30,71 @@ export default function Masonry({ items, onPhotoClick, enableCrop, enablePanoSpa
     const gap = width < 768 ? 10 : 20;
     const columnWidth = (width - (columns - 1) * gap) / columns;
     const colHeights = new Array(columns).fill(0);
+
+    // --- 1. PRE-CALCULATE BALANCE (The Equalizer) ---
+    // We need to know the total imbalance before we start looping.
+    // Positive balance = Too many Landscapes (Need to swap Land -> Port)
+    // Negative balance = Too many Portraits (Need to swap Port -> Land)
+    let balanceCounter = 0;
     
+    if (enableCrop) {
+      items.forEach((item: any) => {
+        const isPano = item.category?.toLowerCase() === 'panos';
+        // We exclude Panos from the equalizer count to protect them
+        if (!isPano) {
+          const w = parseFloat(item.width) || 1000;
+          const h = parseFloat(item.height) || 1000;
+          if (w >= h) balanceCounter++; // Found a Landscape
+          else balanceCounter--;        // Found a Portrait
+        }
+      });
+      // We divide by 2 because swapping 1 image changes the relative difference by 2
+      balanceCounter = Math.round(balanceCounter / 2);
+    }
+
+    // --- 2. LAYOUT LOOP ---
     return items.map((item: any) => {
-      // 1. Get Image Properties
       const isPano = item.category?.toLowerCase() === 'panos';
       const naturalW = parseFloat(item.width) || 1000;
       const naturalH = parseFloat(item.height) || 1000;
+      const isNaturalLandscape = naturalW >= naturalH;
       const naturalAspectRatio = naturalW / naturalH;
-      const isLandscape = naturalAspectRatio >= 1;
 
-      // 2. Determine Span & Aspect Ratio
       let span = 1;
       let targetAspectRatio = naturalAspectRatio;
 
       if (enableCrop) {
-        // --- QUANTIZED LOGIC ---
-        
+        // --- EQUALIZED CROP LOGIC ---
+
         if (isPano && enablePanoSpan) {
-          // EXCEPTION: Pano spanning overrides quantization
-          span = columns; // Span full width
-          targetAspectRatio = naturalAspectRatio; // Keep natural shape
+          // Exception: Panos span full width if enabled
+          span = columns;
+          targetAspectRatio = naturalAspectRatio;
         } else {
-          // STANDARD QUANTIZATION
-          if (isLandscape) {
-             // 2:1 Ratio (Wide and Short)
-             // Width = 1 unit, Height = 0.5 units
-             targetAspectRatio = 2 / 1;
+          // Determine if we need to force a swap to equalize
+          let forceOrientation = isNaturalLandscape ? 'landscape' : 'portrait';
+
+          if (!isPano) {
+            if (balanceCounter > 0 && isNaturalLandscape) {
+              // We have too many Landscapes, force this one to Portrait
+              forceOrientation = 'portrait';
+              balanceCounter--; 
+            } else if (balanceCounter < 0 && !isNaturalLandscape) {
+              // We have too many Portraits, force this one to Landscape
+              forceOrientation = 'landscape';
+              balanceCounter++;
+            }
+          }
+
+          // Apply 4:3 or 3:4 Ratios based on result
+          if (forceOrientation === 'landscape') {
+             targetAspectRatio = 4 / 3;
           } else {
-             // 1:2 Ratio (Narrow and Tall)
-             // Width = 1 unit, Height = 2 units
-             targetAspectRatio = 1 / 2;
+             targetAspectRatio = 3 / 4;
           }
         }
-
       } else {
         // --- NATURAL LOGIC (Crop OFF) ---
-        
-        // Even if crop is off, we usually still want Panos to span if enabled
         if (isPano && enablePanoSpan) {
           span = columns;
         }
@@ -74,19 +102,13 @@ export default function Masonry({ items, onPhotoClick, enableCrop, enablePanoSpa
       }
 
       // 3. Calculate Dimensions
-      // Width is calculated based on how many columns it spans
       const finalWidth = (columnWidth * span) + (gap * (span - 1));
-      
-      // Height is derived from Width / Ratio
       const targetHeight = finalWidth / targetAspectRatio;
 
-      // 4. Find the Shortest Column (Waterfall algorithm)
+      // 4. Waterfall Placement
       let targetCol = 0;
       let minY = Infinity;
-      
-      // We only look at possible starting columns where the item fits (columns - span)
       for (let i = 0; i <= columns - span; i++) {
-        // If spanning multiple columns, find the max height within that span
         const maxHeightInRange = Math.max(...colHeights.slice(i, i + span));
         if (maxHeightInRange < minY) {
           minY = maxHeightInRange;
@@ -97,7 +119,7 @@ export default function Masonry({ items, onPhotoClick, enableCrop, enablePanoSpa
       const x = targetCol * (columnWidth + gap);
       const y = minY;
 
-      // 5. Update column heights
+      // 5. Update heights
       for (let i = targetCol; i < targetCol + span; i++) {
         colHeights[i] = y + targetHeight + gap;
       }
