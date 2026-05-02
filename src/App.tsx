@@ -20,9 +20,13 @@ export default function App() {
   const [selectedPhoto, setSelectedPhoto] = useState<any>(null);
   
   // 2. Settings State
-  const [enableCrop, setEnableCrop] = useState(false);
+  const[enableCrop, setEnableCrop] = useState(false);
   const [enablePanoSpan, setEnablePanoSpan] = useState(false);
 
+  // --- NEW: SWIPE STATE ---
+  const [touchStart, setTouchStart] = useState<{x: number, y: number} | null>(null);
+  const[touchEnd, setTouchEnd] = useState<{x: number, y: number} | null>(null);
+  // ------------------------
   // 3. Navigation Logic
   const handleViewChange = (newView: string) => {
     const newIdx = NAV_ITEMS.indexOf(newView);
@@ -31,14 +35,60 @@ export default function App() {
     setActiveView(newView);
   };
 
+  // --- NEW: SWIPE LOGIC ---
+  const minSwipeDistance = 50;
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    if (e.targetTouches.length > 0) {
+      setTouchStart({ x: e.targetTouches[0].clientX, y: e.targetTouches[0].clientY });
+    }
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    if (e.targetTouches.length > 0) {
+      setTouchEnd({ x: e.targetTouches[0].clientX, y: e.targetTouches[0].clientY });
+    }
+  };
+
+  const onTouchEndEvent = () => {
+    if (!touchStart || !touchEnd || selectedPhoto) return;
+    
+    const distanceX = touchStart.x - touchEnd.x;
+    const distanceY = touchStart.y - touchEnd.y;
+    
+    // Ignore vertical scrolls
+    if (Math.abs(distanceY) > Math.abs(distanceX)) return;
+
+    const isLeftSwipe = distanceX > minSwipeDistance;
+    const isRightSwipe = distanceX < -minSwipeDistance;
+
+    if (isLeftSwipe || isRightSwipe) {
+      const currentIndex = NAV_ITEMS.indexOf(activeView);
+      let nextIndex = currentIndex;
+
+      if (isLeftSwipe) {
+        // Swipe left -> Next tab
+        nextIndex = Math.min(currentIndex + 1, NAV_ITEMS.length - 1);
+      } else if (isRightSwipe) {
+        // Swipe right -> Previous tab
+        nextIndex = Math.max(currentIndex - 1, 0);
+      }
+
+      if (nextIndex !== currentIndex) {
+        handleViewChange(NAV_ITEMS[nextIndex]);
+      }
+    }
+  };
+  // ------------------------
   // 4. Process Photo Data (With shutterSpeed mapping)
   const allPhotos = useMemo(() => {
     return photoData.map((p: any) => ({
       ...p,
-      gridSrc: p.url_medium,
-      editedSrc: p.url_large,
+      gridSrc: p.url_medium,     // <--- Changed: Uses 600px for the grid (super fast loading)
+      editedSrc: p.url_large,  // <--- Changed: Uses 1200px for the Lightbox (high quality)
       dateCaptured: p.date || "Unknown",
-      shutterSpeed: p.shutter, // Maps JSON "shutter" to "shutterSpeed"
+      shutterSpeed: p.shutter, 
     })).sort((a: any, b: any) => 
       new Date(b.dateCaptured).getTime() - new Date(a.dateCaptured).getTime()
     );
@@ -73,7 +123,12 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen text-white relative">
+    <div 
+      className="min-h-screen text-white relative overflow-x-hidden"
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEndEvent}
+    >
       
       {/* BACKGROUND LAYER */}
       <LightRays 

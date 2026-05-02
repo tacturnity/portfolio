@@ -7,10 +7,16 @@ import AnimatedContent from './AnimatedContent';
 import pfpImage from './pfp.jpg'; 
 
 const About: React.FC = () => {
-  const handleContact = () => {
-    window.location.href = "mailto:hello@cookaracha.com";
+  
+  // 1. Email function
+  const handleEmail = () => {
+    window.location.href = "mailto:thejollyroachman@gmail.com";
   };
 
+  // 2. Instagram function
+  const handleInsta = () => {
+    window.open("https://www.instagram.com/rat_splatttt/", "_blank");
+  };
   return (
     <div className="w-full min-h-[80vh] grid grid-cols-1 md:grid-cols-2 items-center gap-12 px-4 md:px-12 max-w-7xl mx-auto">
       
@@ -21,10 +27,12 @@ const About: React.FC = () => {
           handle="sometemplate"
           title="ai addict"
           status="drinking white bull"
-          // 2. USE THE IMPORTED IMAGE VARIABLE HERE
           avatarUrl={pfpImage} 
           miniAvatarUrl={pfpImage}
-          onContactClick={handleContact}
+          contactText="Email"
+          onContactClick={handleEmail}
+          instaText="Insta"
+          onInstaClick={handleInsta}
         />
       </div>
 

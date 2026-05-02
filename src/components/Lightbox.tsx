@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback, useState } from 'react';
 import type { Photo } from '../types';
 
 interface LightboxProps {
@@ -19,6 +19,36 @@ const MetadataRow: React.FC<{ label: string; value: string | number }> = ({ labe
 );
 
 const Lightbox: React.FC<LightboxProps> = ({ photo, onClose, onNext, onPrev, hasNext, hasPrev }) => {
+  // --- NEW: SWIPE STATE FOR LIGHTBOX ---
+  const [touchStart, setTouchStart] = useState<{x: number, y: number} | null>(null);
+  const [touchEnd, setTouchEnd] = useState<{x: number, y: number} | null>(null);
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    if (e.targetTouches.length > 0) {
+      setTouchStart({ x: e.targetTouches[0].clientX, y: e.targetTouches[0].clientY });
+    }
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    if (e.targetTouches.length > 0) {
+      setTouchEnd({ x: e.targetTouches[0].clientX, y: e.targetTouches[0].clientY });
+    }
+  };
+
+  const onTouchEndEvent = () => {
+    if (!touchStart || !touchEnd) return;
+    const distanceX = touchStart.x - touchEnd.x;
+    const distanceY = touchStart.y - touchEnd.y;
+    
+    // Ensure it's a horizontal swipe
+    if (Math.abs(distanceY) > Math.abs(distanceX)) return;
+
+    if (distanceX > 50 && hasNext) onNext();
+    if (distanceX < -50 && hasPrev) onPrev();
+  };
+  // -------------------------------------
+
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Escape') onClose();
     if (e.key === 'ArrowRight' && hasNext) onNext();
@@ -45,8 +75,11 @@ const Lightbox: React.FC<LightboxProps> = ({ photo, onClose, onNext, onPrev, has
 
   return (
     <div 
-      className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center animate-fade-in"
+      className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center animate-fade-in touch-none"
       onClick={onClose}
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEndEvent}
       role="dialog"
       aria-modal="true"
     >

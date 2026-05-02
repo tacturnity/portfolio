@@ -21,6 +21,8 @@ interface ProfileCardProps {
   contactText?: string;
   showUserInfo?: boolean;
   onContactClick?: () => void;
+  instaText?: string;             
+  onInstaClick?: () => void;    
 }
 
 const DEFAULT_INNER_GRADIENT = 'linear-gradient(145deg,#60496e8c 0%,#71C4FF44 100%)';
@@ -56,9 +58,11 @@ const ProfileCardComponent: React.FC<ProfileCardProps> = ({
   title = "Visual Artist",
   handle = "cookaracha",
   status = "Active",
-  contactText = "Get in touch",
+  contactText = "Email",
   showUserInfo = true,
-  onContactClick
+  onContactClick,
+  instaText = "Insta",            
+  onInstaClick       
 }) => {
   const wrapRef = useRef<HTMLDivElement>(null);
   const shellRef = useRef<HTMLDivElement>(null);
@@ -194,9 +198,18 @@ const ProfileCardComponent: React.FC<ProfileCardProps> = ({
                       <div className="pc-status">{status}</div>
                     </div>
                   </div>
-                  <button className="pc-contact-btn" onClick={onContactClick} type="button">
-                    {contactText}
-                  </button>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      {onInstaClick && (
+                        <button className="pc-contact-btn" onClick={onInstaClick} type="button">
+                          {instaText}
+                        </button>
+                      )}
+                      {onContactClick && (
+                        <button className="pc-contact-btn" onClick={onContactClick} type="button">
+                          {contactText}
+                        </button>
+                      )}
+                    </div>
                 </div>
               )}
             </div>
