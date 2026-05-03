@@ -1,0 +1,32 @@
+name: Generate Social Preview
+on:
+  push:
+    branches:
+      - main
+jobs:
+  screenshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      - name: Install shot-scraper
+        run: |
+          pip install shot-scraper
+          shot-scraper install
+      - name: Take Screenshot
+        run: |
+          # Replace the URL with your live site URL
+          # -w 1200 -h 630 captures exactly the "first half" in OG dimensions
+          shot-scraper https://yourusername.github.io/portfolio/ \
+            --width 1200 --height 630 \
+            --output public/og-preview.jpg
+      - name: Commit and Push
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add public/og-preview.jpg
+          git commit -m "Update social preview image" || exit 0
+          git push
