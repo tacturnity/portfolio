@@ -1,5 +1,5 @@
 import React from 'react';
-
+import { Sun } from 'lucide-react';
 interface BottomNavProps {
   navItems: string[];
   activeItem: string;
