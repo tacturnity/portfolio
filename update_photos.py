@@ -351,6 +351,17 @@ def main():
     photo_list.sort(key=lambda x: x['date'], reverse=True)
     for index, photo in enumerate(photo_list): photo['id'] = index + 1
 
+    # --- AUTOMATIC LATEST PHOTO PREVIEW ---
+    if photo_list:
+        import shutil
+        latest_photo = photo_list[0]
+        url_large = latest_photo.get("url_large", "")
+        local_large_path = url_large.replace("/portfolio/optimized2/", "public/optimized2/")
+        if os.path.exists(local_large_path):
+            shutil.copy2(local_large_path, "public/og-image.webp")
+            print(f"🖼️ Set latest photo as OpenGraph preview (og-image.webp): {latest_photo['title']}")
+    # --------------------------------------
+
     with open("src/photos.json", "w") as f:
         json.dump(photo_list, f, indent=4)
 

@@ -4,7 +4,7 @@ import React, { useState, useMemo, useRef, useEffect, Component, startTransition
 import type { ErrorInfo, ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import photoData from './photos.json';
-
+import { Sun } from 'lucide-react';
 // Component Imports
 import Header from './components/Header';
 import Masonry from './components/Masonry';

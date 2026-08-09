@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useMemo } from 'react';
 import './ProfileCard.css';
+import { Sun } from 'lucide-react';
 
 interface ProfileCardProps {
   avatarUrl?: string;
