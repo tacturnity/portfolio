@@ -386,7 +386,7 @@ function PackedWall({ items, onPhotoClick, wallState, enableCrop, enablePanoSpan
     const HOME_IMAGE_SCALE = isMobileOrTablet ? 28 : 8.7; 
 
     const mapped = items.map((item: any, i: number) => {
-      const unitData = tempUnitPacked[i]; Sun
+      const unitData = tempUnitPacked[i];
 
       // homeSpacingX = 15.0, homeSpacingY = 3.6
       const hx = unitData.unitX * scaleX * (15.0 / 15.0);
