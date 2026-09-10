@@ -125,6 +125,42 @@ def is_heavy_image(task):
         
     return False
 
+def cleanup_orphaned_images(expected_output_paths):
+    """
+    Deletes any files in OPTIMIZED_BASE that do not match current images in BASE_PATH.
+    Keeps large, medium, and thumb subfolders in exact sync with the source folder.
+    """
+    if not os.path.exists(OPTIMIZED_BASE):
+        return
+
+    print("🧹 Checking for deleted source images and pruning optimized mirrors...")
+    deleted_count = 0
+
+    for root, dirs, files in os.walk(OPTIMIZED_BASE, topdown=False):
+        for file in files:
+            full_path = os.path.normpath(os.path.join(root, file))
+            norm_key = os.path.normcase(full_path)
+
+            if norm_key not in expected_output_paths:
+                try:
+                    os.remove(full_path)
+                    deleted_count += 1
+                    print(f"  🗑️ Deleted orphaned file: {full_path}")
+                except Exception as e:
+                    print(f"⚠️ Failed to remove {full_path}: {e}")
+
+        # Clean up empty directories bottom-up
+        try:
+            if not os.listdir(root):
+                os.rmdir(root)
+        except Exception:
+            pass
+
+    if deleted_count > 0:
+        print(f"✨ Pruned {deleted_count} orphaned images from output folders.\n")
+    else:
+        print("✅ Output mirrors are fully in sync with source files.\n")
+
 def process_file(task_data):
     full_input_path, category, rel_path, filename, cache_key, mtime, size = task_data
     
@@ -255,6 +291,7 @@ def main():
     tasks = []
     photo_list = []
     new_cache = {}
+    expected_output_paths = set()
 
     for cat in CATEGORIES:
         cat_path = os.path.join(BASE_PATH, cat)
@@ -265,6 +302,14 @@ def main():
             for file in files:
                 if file.lower().endswith(('.jpg', '.jpeg', '.png', '.webp')):
                     full_input_path = os.path.join(root, file)
+
+                    if file.lower().endswith('.webp'): clean_name = file
+                    else: clean_name = os.path.splitext(file)[0] + ".webp"
+
+                    # Register expected destination files across all 3 subfolders
+                    for subfolder in ("large", "medium", "thumb"):
+                        expected_file = os.path.join(OPTIMIZED_BASE, cat, rel_path, subfolder, clean_name)
+                        expected_output_paths.add(os.path.normcase(os.path.normpath(expected_file)))
                     
                     try:
                         stat_info = os.stat(full_input_path)
@@ -298,6 +343,10 @@ def main():
 
                     if not is_cached:
                         tasks.append((full_input_path, cat, rel_path, file, cache_key, mtime, size))
+
+    # --- SINK & PURGE ORPHANED IMAGES ---
+    # Any image deleted from BASE_PATH is deleted from public/optimized2 across large/medium/thumb
+    cleanup_orphaned_images(expected_output_paths)
 
     if tasks:
         standard_tasks = []
