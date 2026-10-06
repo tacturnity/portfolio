@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 export default function PerfCounter() {
   const [stats, setStats] = useState({ cpu: 0, gpu: 0, fps: 0 });
   // Modes: 'scroll' (moves with page) -> 'pinned' (fixed to screen) -> 'hidden' (dissolved)
-  const [mode, setMode] = useState<'scroll' | 'pinned' | 'hidden'>('scroll');
+  const [mode, setMode] = useState<'scroll' | 'pinned' | 'hidden'>('hidden');
 
   const frameCount = useRef(0);
   const lastTime = useRef(performance.now());
