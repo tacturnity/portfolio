@@ -26,15 +26,15 @@ const About: React.FC = () => {
       <div className="flex justify-center items-center w-full lg:w-auto">
         <ProfileCard 
           name="Cookaracha"
-          handle="sometemplate"
-          title="ai addict"
-          status="drinking white bull"
+          handle="cookaracha"
+          title="very bad typos"
+          status="studnet"
           avatarUrl={pfpImage} 
           miniAvatarUrl={pfp2Image} // Modified to use pfp2.jpg strictly for the mini-avatar in the bottom left
           iconUrl={pfp2Image} 
-          contactText="Email"
+          contactText="eBird"
           onContactClick={handleEmail}
-          instaText="Insta"
+          instaText="inskergam"
           onInstaClick={handleInsta}
         />
       </div>
@@ -44,7 +44,7 @@ const About: React.FC = () => {
         <AnimatedContent distance={40} delay={0.2}>
           <div className="space-y-2">
             <h2 className="text-5xl md:text-6xl font-bold tracking-tighter text-rose-400 font-['Lexend'] uppercase">
-              more info
+              pimpilinpausa
             </h2>
             <p className="text-[12px] uppercase tracking-[0.6em] text-neutral-500 font-medium">
               COMERA GO BEEP BOOP
@@ -55,7 +55,7 @@ const About: React.FC = () => {
         <AnimatedContent distance={40} delay={0.4}>
           <div className="max-w-md space-y-4 text-neutral-400 font-light leading-relaxed tracking-wide text-base md:text-lg">
             <p>
-              i think i like editing more than taking pictures me use an eos r100 and the adobe indigo app on a 14 pro mostly
+              i think i like editing more than taking pictures me use an eos r100 and the adobe indigo app on a 14 pro mostly ALSO BOUGHTA DJI OSMO POCKET4 rceently yyayayayayayay
             </p>
           </div>
         </AnimatedContent>
