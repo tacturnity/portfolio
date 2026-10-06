@@ -69,6 +69,7 @@ export default function TiltedCard({
           src={imageSrc}
           alt={altText}
           // Removed loading="lazy" completely to fix standard WebKit/Chrome absolute-grid loading bugs [3]
+          loading="lazy"
           decoding="async"   
           className="absolute top-0 left-0 object-cover rounded-[24px] shadow-2xl border border-white/5"
           style={{ width: '100%', height: '100%' }}

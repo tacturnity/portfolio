@@ -5,7 +5,25 @@ import concurrent.futures
 import gc
 from PIL import Image, ExifTags, ImageStat, ImageCms
 from pathlib import Path
+import subprocess
+import time
+from playwright.sync_api import sync_playwright
 
+def capture_social_preview(output_path="public/og-image.png"):
+    print("📸 Spinning up local preview to capture screenshot...")
+    server = subprocess.Popen("npx vite --port 5173", shell=True)
+    time.sleep(3)
+    try:
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            page = browser.new_page(viewport={"width": 1200, "height": 630})
+            page.goto("http://localhost:5173")
+            page.wait_for_timeout(2500)
+            page.screenshot(path=output_path)
+            browser.close()
+        print(f"✅ Preview saved: {output_path}")
+    finally:
+        subprocess.run(f"taskkill /F /T /PID {server.pid}", shell=True, capture_output=True)
 # --- CONFIG ---
 Image.MAX_IMAGE_PIXELS = None 
 warnings.simplefilter('ignore', Image.DecompressionBombWarning)
@@ -400,17 +418,7 @@ def main():
     photo_list.sort(key=lambda x: x['date'], reverse=True)
     for index, photo in enumerate(photo_list): photo['id'] = index + 1
 
-    # --- AUTOMATIC LATEST PHOTO PREVIEW ---
-    if photo_list:
-        import shutil
-        latest_photo = photo_list[0]
-        url_large = latest_photo.get("url_large", "")
-        local_large_path = url_large.replace("/portfolio/optimized2/", "public/optimized2/")
-        if os.path.exists(local_large_path):
-            shutil.copy2(local_large_path, "public/og-image.webp")
-            print(f"🖼️ Set latest photo as OpenGraph preview (og-image.webp): {latest_photo['title']}")
-    # --------------------------------------
-
+    capture_social_preview("public/og-image.png")
     with open("src/photos.json", "w") as f:
         json.dump(photo_list, f, indent=4)
 

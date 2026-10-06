@@ -1,12 +1,19 @@
-
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import TiltedCard from './TiltedCard';
 
-// Helper to safely deserialize transition parameters to prevent stale closure cloning in Framer Motion
+// Helper to safely deserialize transition parameters for Framer Motion
 const parseCardCustom = (str: any) => {
   if (typeof str !== 'string') {
-    return { index: 0, direction: 0, slideOffset: 300, staggerDelay: 0.07, slideDuration: 0.4, transitionType: 'cascade' as const, columns: 4 };
+    return { 
+      index: 0, 
+      direction: 0, 
+      slideOffset: 300, 
+      staggerDelay: 0.07, 
+      slideDuration: 0.4, 
+      transitionType: 'cascade' as const, 
+      columns: 4 
+    };
   }
   const [index, direction, slideOffset, staggerDelay, slideDuration, transitionType, columns] = str.split('_');
   return {
@@ -34,7 +41,6 @@ export default function Masonry({
   const containerRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
 
-  // ResizeObserver continuously monitors container dimensions, adapting column counts as animations complete
   useLayoutEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -42,23 +48,16 @@ export default function Masonry({
     const resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const newWidth = entry.contentRect.width;
-        if (newWidth > 0) {
-          setWidth(newWidth);
-        }
+        if (newWidth > 0) setWidth(newWidth);
       }
     });
 
     resizeObserver.observe(el);
+    if (el.offsetWidth > 0) setWidth(el.offsetWidth);
 
-    const initialWidth = el.offsetWidth;
-    if (initialWidth > 0) setWidth(initialWidth);
-
-    return () => {
-      resizeObserver.disconnect();
-    };
+    return () => resizeObserver.disconnect();
   }, []);
 
-  // Columns breakpoint logic
   const columns = width >= 1500 ? 5 : width >= 1000 ? 4 : width >= 768 ? 3 : 2;
 
   const gridItems = useMemo(() => {
@@ -68,7 +67,6 @@ export default function Masonry({
     const columnWidth = (width - (columns - 1) * gap) / columns;
     const colHeights = new Array(columns).fill(0);
 
-    // --- 1. EQUALIZER COUNTER ---
     let balanceCounter = 0;
     let landscapeCount = 0;
     let portraitCount = 0;
@@ -86,7 +84,6 @@ export default function Masonry({
       balanceCounter = Math.round((landscapeCount - portraitCount) / 2);
     }
 
-    // --- 2. LAYOUT LOOP ---
     return items.map((item: any) => {
       const isPano = item.category?.toLowerCase() === 'panos';
       const naturalW = parseFloat(item.width) || 1000;
@@ -96,18 +93,14 @@ export default function Masonry({
 
       let span = 1;
       let targetAspectRatio = naturalAspectRatio;
-      
-      let displaySrc = item.gridSrc; 
+      let displaySrc = item.gridSrc || item.url_medium || item.url_large; 
 
       if (enableCrop) {
         if (isPano && enablePanoSpan) {
           span = columns;
-          targetAspectRatio = naturalAspectRatio;
-          displaySrc = item.editedSrc; 
+          displaySrc = item.editedSrc || item.url_large; 
         } else {
-          // EQUALIZER LOGIC
           let forceOrientation = isNaturalLandscape ? 'landscape' : 'portrait';
-
           if (!isPano) {
             if (balanceCounter > 0 && isNaturalLandscape) {
               forceOrientation = 'portrait';
@@ -117,20 +110,13 @@ export default function Masonry({
               balanceCounter++;
             }
           }
-
-          if (forceOrientation === 'landscape') {
-             targetAspectRatio = 4 / 3;
-          } else {
-             targetAspectRatio = 3 / 4;
-          }
+          targetAspectRatio = forceOrientation === 'landscape' ? 4 / 3 : 3 / 4;
         }
       } else {
-        // CROP DISABLED
         if (isPano && enablePanoSpan) {
           span = columns;
-          displaySrc = item.editedSrc;
+          displaySrc = item.editedSrc || item.url_large;
         }
-        targetAspectRatio = naturalAspectRatio;
       }
 
       const finalWidth = (columnWidth * span) + (gap * (span - 1));
@@ -171,9 +157,8 @@ export default function Masonry({
 
       return {
         opacity: 0,
-        // Strictly horizontal entry sliding with unified 80px offset
         x: isDissolve ? 0 : (direction >= 0 ? 80 : -80), 
-        y: 0, // Removed diagonal offset to keep motion purely horizontal
+        y: 0,
         scale: isDissolve ? 1 : 0.98,
       };
     },
@@ -183,17 +168,10 @@ export default function Masonry({
       const isInstant = transitionType === 'instant';
       
       const colIndex = index % parsedCols;
-      // Dynamically flip cascade delay order to flow in the swipe direction
       const localStaggerIndex = direction >= 0 ? colIndex : (parsedCols - 1 - colIndex);
 
       if (isInstant) {
-        return { 
-          opacity: 1, 
-          x: 0, 
-          y: 0, 
-          scale: 1,
-          transition: { duration: 0 }
-        };
+        return { opacity: 1, x: 0, y: 0, scale: 1, transition: { duration: 0 } };
       }
 
       return {
@@ -219,9 +197,8 @@ export default function Masonry({
 
       return {
         opacity: 0,
-        // Strictly horizontal exit sliding with unified 80px offset
         x: isDissolve ? 0 : (direction >= 0 ? -80 : 80), 
-        y: 0, // Removed diagonal offset to keep motion purely horizontal
+        y: 0,
         scale: isDissolve ? 1 : 0.98,
         transition: {
           duration: isDissolve ? 0.25 : slideDuration * 0.4,
@@ -244,14 +221,19 @@ export default function Masonry({
               variants={cardVariants}
               initial="hidden"
               whileInView="visible"
-              viewport={{ once: false, margin: "150px 0px 150px 0px" }}
+              /* Set to 80px so cards begin animating just as they reach the screen edge */
+              viewport={{ once: false, margin: "80px 0px 80px 0px" }}
               exit="exit"
               className="absolute animate-gpu"
               style={{ 
                 width: item.w + 'px', 
                 height: item.h + 'px', 
                 left: item.x + 'px', 
-                top: item.y + 'px' 
+                top: item.y + 'px',
+                /* Hardware acceleration without breaking Framer Motion layout */
+                transform: 'translate3d(0, 0, 0)',
+                backfaceVisibility: 'hidden',
+                WebkitBackfaceVisibility: 'hidden'
               }}
             >
               <TiltedCard 

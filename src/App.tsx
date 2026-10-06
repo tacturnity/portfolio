@@ -1,10 +1,10 @@
-
-// App.tsx
+// src/App.tsx
 import React, { useState, useMemo, useRef, useEffect, Component, startTransition } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import photoData from './photos.json';
 import { Sun } from 'lucide-react';
+
 // Component Imports
 import Header from './components/Header';
 import Masonry from './components/Masonry';
@@ -14,6 +14,7 @@ import Lightbox from './components/Lightbox';
 import GradualBlur from './components/GradualBlur';
 import LightRays from './components/LightRays'; 
 import Wall3D from './components/Wall3d';
+import PerfCounter from './components/PerfCounter';
 
 const NAV_ITEMS = ['Home', 'All Work', 'Animals', 'Misc', 'People', 'Panos', 'About Me'];
 
@@ -98,7 +99,6 @@ export default function App() {
     if (newView === activeView || isAnimating.current) return;
     isAnimating.current = true;
     
-    // startTransition defers heavy background grid processing so the UI button press doesn't freeze
     startTransition(() => {
       setPendingView(newView);
       setSelectedPhoto(null);
@@ -124,9 +124,6 @@ export default function App() {
       setTransitionType('cascade');
     }
 
-    // ==========================================
-    // Category <-> Category OR Category <-> About (2D)
-    // ==========================================
     if ((isFromCategory || isFromAbout) && (isToCategory || isToAbout)) {
       setIsMasonryVisible(true);
       
@@ -142,9 +139,6 @@ export default function App() {
       return;
     }
 
-    // ==========================================
-    // Category -> Home
-    // ==========================================
     if (isFromCategory && isToHome) {
       setIsCanvasMounted(true);
       setWallState('About Me'); 
@@ -161,11 +155,7 @@ export default function App() {
       await sleep(1500);
 
       setPendingView(null);
-    }
-    // ==========================================
-    // Home -> Category 
-    // ==========================================
-    else if (isFromHome && isToCategory) {
+    } else if (isFromHome && isToCategory) {
       setIsCanvasMounted(true);
       setWallState('About Me'); 
       
@@ -179,11 +169,7 @@ export default function App() {
       await sleep(800);
       setIsCanvasMounted(false);
       setPendingView(null);
-    }
-    // ==========================================
-    // Home -> About Me
-    // ==========================================
-    else if (isFromHome && isToAbout) {
+    } else if (isFromHome && isToAbout) {
       setIsCanvasMounted(true);
       setWallState('About Me');
       await sleep(1000);
@@ -196,11 +182,7 @@ export default function App() {
       await sleep(800);
       setIsCanvasMounted(false);
       setPendingView(null);
-    }
-    // ==========================================
-    // About Me -> Home
-    // ==========================================
-    else if (isFromAbout && isToHome) {
+    } else if (isFromAbout && isToHome) {
       setIsCanvasMounted(true);
       setWallState('About Me');
       await sleep(50);
@@ -287,10 +269,22 @@ export default function App() {
   const customKey = `${direction}_${transitionType}_${activeView === 'About Me'}`;
 
   return (
-    <div className="min-h-screen text-white relative overflow-x-hidden bg-black select-none" onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEndEvent}>
-      
-      <LightRays raysColor="#fb7185" raysSpeed={0.2} raysOrigin="top-center" lightSpread={0.5} rayLength={0.8} maskStrength={0.5} />
+    <div 
+      className="min-h-screen text-white relative overflow-x-hidden bg-black select-none" 
+      onTouchStart={onTouchStart} 
+      onTouchMove={onTouchMove} 
+      onTouchEnd={onTouchEndEvent}
+    >
+      <LightRays 
+        raysColor="#fb7185" 
+        raysSpeed={0.2} 
+        raysOrigin="top-center" 
+        lightSpread={0.5} 
+        rayLength={0.8} 
+        maskStrength={0.5} 
+      />
 
+      {/* Header & Performance Counter Container */}
       <AnimatePresence>
         {!selectedPhoto && (
           <div className="absolute top-0 left-0 w-full z-50 pointer-events-none">
@@ -300,6 +294,8 @@ export default function App() {
               titleSpringDamping={14} 
               titleSpringMass={5.0} 
             />
+            {/* Counter scrolls out of view naturally with the header */}
+            <PerfCounter />
           </div>
         )}
       </AnimatePresence>
@@ -314,7 +310,13 @@ export default function App() {
             }}
             className={`fixed inset-0 z-0 touch-none ${isMasonryVisible ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
           >
-            <Wall3D items={allPhotos} onPhotoClick={setSelectedPhoto} wallState={wallState} enableCrop={enableCrop} enablePanoSpan={enablePanoSpan} />
+            <Wall3D 
+              items={allPhotos} 
+              onPhotoClick={setSelectedPhoto} 
+              wallState={wallState} 
+              enableCrop={enableCrop} 
+              enablePanoSpan={enablePanoSpan} 
+            />
           </div>
         )}
       </ErrorBoundary>
@@ -328,15 +330,11 @@ export default function App() {
           }} 
           className={`pt-[148px] md:pt-[272px] pb-40 px-4 md:px-8 relative z-10 min-h-screen ${isMasonryVisible ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} 
         >
-          {/* 
-            Replaced popLayout with a CSS Grid trick. 
-            Overlapping elements completely drops the layout calculation phase, removing the freezing lag! 
-          */}
           <div className="grid w-full">
             {(() => {
               const slideVariants = {
                 enter: (customStr: string) => {
-                  const { direction, transitionType, isAbout } = parseCustom(customStr);
+                  const { direction, transitionType } = parseCustom(customStr);
                   const isDissolve = transitionType === 'dissolve' || transitionType === 'instant';
                   return {
                     opacity: 0, 
@@ -348,7 +346,7 @@ export default function App() {
                   x: 0,
                 },
                 exit: (customStr: string) => {
-                  const { direction, transitionType, isAbout } = parseCustom(customStr);
+                  const { direction, transitionType } = parseCustom(customStr);
                   const isDissolve = transitionType === 'dissolve' || transitionType === 'instant';
                   return {
                     opacity: 0, 
@@ -356,6 +354,7 @@ export default function App() {
                   };
                 }
               };
+
               return (
                 <AnimatePresence custom={customKey}>
                   {activeView === 'About Me' ? (
@@ -381,7 +380,6 @@ export default function App() {
                           if (currentIndex > 0) handleViewChange(NAV_ITEMS[currentIndex - 1]);
                         }
                       }}
-                      // Apply grid overlay technique
                       style={{ gridArea: '1 / 1' }}
                       className="w-full"
                     >
@@ -410,7 +408,6 @@ export default function App() {
                           if (currentIndex > 0) handleViewChange(NAV_ITEMS[currentIndex - 1]);
                         }
                       }}
-                      // Apply grid overlay technique
                       style={{ gridArea: '1 / 1' }}
                       className="w-full"
                     >
@@ -438,7 +435,14 @@ export default function App() {
       <GradualBlur height="15vh" strength={10} />
 
       {selectedPhoto && (
-        <Lightbox photo={selectedPhoto} onClose={() => setSelectedPhoto(null)} onNext={() => setSelectedPhoto(filteredPhotos[(currentIndex + 1) % filteredPhotos.length])} onPrev={() => setSelectedPhoto(filteredPhotos[(currentIndex - 1 + filteredPhotos.length) % filteredPhotos.length])} hasNext={filteredPhotos.length > 1} hasPrev={filteredPhotos.length > 1} />
+        <Lightbox 
+          photo={selectedPhoto} 
+          onClose={() => setSelectedPhoto(null)} 
+          onNext={() => setSelectedPhoto(filteredPhotos[(currentIndex + 1) % filteredPhotos.length])} 
+          onPrev={() => setSelectedPhoto(filteredPhotos[(currentIndex - 1 + filteredPhotos.length) % filteredPhotos.length])} 
+          hasNext={filteredPhotos.length > 1} 
+          hasPrev={filteredPhotos.length > 1} 
+        />
       )}
     </div>
   );

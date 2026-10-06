@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useState } from 'react';
+import React, { useEffect, useCallback, useState, useRef } from 'react';
 import type { Photo } from '../types';
 
 interface LightboxProps {
@@ -10,7 +10,6 @@ interface LightboxProps {
   hasPrev: boolean;
 }
 
-// Updated with a shrink-resistant dt and text truncation to elegantly support wide filenames
 const MetadataRow: React.FC<{ label: string; value: string | number; truncate?: boolean }> = ({ label, value, truncate = false }) => (
   <div className="flex justify-between text-[10px] md:text-sm items-center gap-4 w-full">
     <dt className="text-gray-400 shrink-0">{label}</dt>
@@ -24,27 +23,146 @@ const MetadataRow: React.FC<{ label: string; value: string | number; truncate?: 
 );
 
 const Lightbox: React.FC<LightboxProps> = ({ photo, onClose, onNext, onPrev, hasNext, hasPrev }) => {
+  // Zoom & Pan State
+  const [scale, setScale] = useState(1);
+  const [pos, setPos] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+
+  // Desktop click vs drag tracking
+  const isMouseDown = useRef(false);
+  const hasDragged = useRef(false);
+  const dragStart = useRef({ x: 0, y: 0 });
+  const posStart = useRef({ x: 0, y: 0 });
+
+  // Mobile gestures tracking
   const [touchStart, setTouchStart] = useState<{x: number, y: number} | null>(null);
   const [touchEnd, setTouchEnd] = useState<{x: number, y: number} | null>(null);
+  const initialPinchDist = useRef<number | null>(null);
+  const initialPinchScale = useRef<number>(1);
+
+  // Reset zoom on photo change
+  useEffect(() => {
+    setScale(1);
+    setPos({ x: 0, y: 0 });
+  }, [photo]);
+
+  // Scroll wheel zoom (1x to 5x)
+  const handleWheel = (e: React.WheelEvent) => {
+    e.stopPropagation();
+    setScale((prevScale) => {
+      const zoomFactor = -e.deltaY * 0.0025;
+      const nextScale = Math.min(Math.max(1, prevScale + zoomFactor), 5);
+      if (nextScale === 1) setPos({ x: 0, y: 0 });
+      return nextScale;
+    });
+  };
+
+  // Mouse pan & single-click toggle zoom
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    isMouseDown.current = true;
+    hasDragged.current = false;
+    dragStart.current = { x: e.clientX, y: e.clientY };
+    posStart.current = { ...pos };
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isMouseDown.current) return;
+    const dx = e.clientX - dragStart.current.x;
+    const dy = e.clientY - dragStart.current.y;
+
+    if (Math.hypot(dx, dy) > 5) {
+      hasDragged.current = true;
+      if (scale > 1) {
+        setIsDragging(true);
+        setPos({
+          x: posStart.current.x + dx,
+          y: posStart.current.y + dy,
+        });
+      }
+    }
+  };
+
+  const handleMouseUp = (e: React.MouseEvent) => {
+    if (!isMouseDown.current) return;
+    isMouseDown.current = false;
+    setIsDragging(false);
+
+    // If mouse didn't drag, treat as a single click to toggle zoom
+    if (!hasDragged.current) {
+      e.stopPropagation();
+      if (scale > 1) {
+        setScale(1);
+        setPos({ x: 0, y: 0 });
+      } else {
+        setScale(2.5);
+      }
+    }
+  };
+
+  // Touch: Pinch-to-zoom & Swipe
+  const getTouchDistance = (t1: React.Touch, t2: React.Touch) => {
+    return Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+  };
 
   const onTouchStart = (e: React.TouchEvent) => {
-    setTouchEnd(null);
-    if (e.targetTouches.length > 0) {
-      setTouchStart({ x: e.targetTouches[0].clientX, y: e.targetTouches[0].clientY });
+    if (e.targetTouches.length === 2) {
+      setIsDragging(false);
+      initialPinchDist.current = getTouchDistance(e.targetTouches[0], e.targetTouches[1]);
+      initialPinchScale.current = scale;
+      return;
+    }
+
+    if (e.targetTouches.length === 1) {
+      if (scale > 1) {
+        setIsDragging(true);
+        dragStart.current = { x: e.targetTouches[0].clientX, y: e.targetTouches[0].clientY };
+        posStart.current = { ...pos };
+      } else {
+        setTouchEnd(null);
+        setTouchStart({ x: e.targetTouches[0].clientX, y: e.targetTouches[0].clientY });
+      }
     }
   };
 
   const onTouchMove = (e: React.TouchEvent) => {
-    if (e.targetTouches.length > 0) {
+    if (e.targetTouches.length === 2 && initialPinchDist.current !== null) {
+      const currentDist = getTouchDistance(e.targetTouches[0], e.targetTouches[1]);
+      const factor = currentDist / initialPinchDist.current;
+      const nextScale = Math.min(Math.max(1, initialPinchScale.current * factor), 5);
+      setScale(nextScale);
+      if (nextScale === 1) setPos({ x: 0, y: 0 });
+      return;
+    }
+
+    if (scale > 1 && isDragging && e.targetTouches.length === 1) {
+      const dx = e.targetTouches[0].clientX - dragStart.current.x;
+      const dy = e.targetTouches[0].clientY - dragStart.current.y;
+      setPos({
+        x: posStart.current.x + dx,
+        y: posStart.current.y + dy,
+      });
+      return;
+    }
+
+    if (scale === 1 && e.targetTouches.length === 1) {
       setTouchEnd({ x: e.targetTouches[0].clientX, y: e.targetTouches[0].clientY });
     }
   };
 
-  const onTouchEndEvent = () => {
+  const onTouchEndEvent = (e: React.TouchEvent) => {
+    if (e.targetTouches.length < 2) {
+      initialPinchDist.current = null;
+    }
+
+    if (scale > 1) {
+      if (e.targetTouches.length === 0) setIsDragging(false);
+      return;
+    }
+
     if (!touchStart || !touchEnd) return;
     const distanceX = touchStart.x - touchEnd.x;
     const distanceY = touchStart.y - touchEnd.y;
-    
     if (Math.abs(distanceY) > Math.abs(distanceX)) return;
 
     if (distanceX > 50 && hasNext) onNext();
@@ -53,9 +171,11 @@ const Lightbox: React.FC<LightboxProps> = ({ photo, onClose, onNext, onPrev, has
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Escape') onClose();
-    if (e.key === 'ArrowRight' && hasNext) onNext();
-    if (e.key === 'ArrowLeft' && hasPrev) onPrev();
-  }, [onClose, onNext, onPrev, hasNext, hasPrev]);
+    if (scale === 1) {
+      if (e.key === 'ArrowRight' && hasNext) onNext();
+      if (e.key === 'ArrowLeft' && hasPrev) onPrev();
+    }
+  }, [onClose, onNext, onPrev, hasNext, hasPrev, scale]);
 
   useEffect(() => {
     if (photo) {
@@ -74,39 +194,46 @@ const Lightbox: React.FC<LightboxProps> = ({ photo, onClose, onNext, onPrev, has
   if (!photo) return null;
 
   const filename = photo.editedSrc.split('/').pop();
-
-  // Load medium-res images on mobile/tablet to ensure instant switching performance
   const isMobileOrTablet = typeof window !== 'undefined' && window.innerWidth < 1024;
   const imageSrc = isMobileOrTablet ? photo.gridSrc : photo.editedSrc;
 
+  const cursorClass = scale > 1 
+    ? (isDragging ? 'cursor-grabbing' : 'cursor-zoom-out') 
+    : 'cursor-zoom-in';
+
   return (
     <div 
-      // Restructured using standard absolute overlay positions to remove flex container positioning bugs on siblings
-      className="fixed inset-0 bg-black/95 z-50 select-none animate-fade-in"
+      className="fixed inset-0 bg-black/95 z-50 select-none animate-fade-in overflow-hidden"
       onClick={onClose}
-      // Isolated touch events completely from bubbling up to App.tsx's global swipe handler
       onTouchStart={(e) => { e.stopPropagation(); onTouchStart(e); }}
       onTouchMove={(e) => { e.stopPropagation(); onTouchMove(e); }}
-      onTouchEnd={(e) => { e.stopPropagation(); onTouchEndEvent(); }}
+      onTouchEnd={(e) => { e.stopPropagation(); onTouchEndEvent(e); }}
       role="dialog"
       aria-modal="true"
     >
-      {/* Central image container with z-10 and pointer-events-none so it doesn't block sibling actions */}
+      {/* Zoom / Pan Image Canvas */}
       <div 
-        className="absolute inset-0 flex items-center justify-center p-4 md:p-12 z-10 pointer-events-none"
+        className="absolute inset-0 flex items-center justify-center p-4 md:p-12 z-10"
         onClick={e => e.stopPropagation()}
+        onWheel={handleWheel}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
       >
         <img 
           src={imageSrc} 
           alt={photo.title} 
-          className="max-w-full max-h-full object-contain shadow-2xl pointer-events-auto"
+          draggable={false}
+          style={{
+            transform: `translate3d(${pos.x}px, ${pos.y}px, 0) scale(${scale})`,
+            transition: isDragging ? 'none' : 'transform 0.15s ease-out',
+            touchAction: 'none'
+          }}
+          className={`max-w-full max-h-full object-contain shadow-2xl pointer-events-auto select-none ${cursorClass}`}
         />
       </div>
 
-      {/* 
-        Strictly rely on single onClick handlers with propagation stops. 
-        Removing duplicate touchstart handlers completely resolves iOS double-dispatch blocks.
-      */}
+      {/* Close Button */}
       <button 
         type="button"
         onClick={(e) => { e.stopPropagation(); onClose(); }}
@@ -118,7 +245,8 @@ const Lightbox: React.FC<LightboxProps> = ({ photo, onClose, onNext, onPrev, has
         </svg>
       </button>
       
-      {hasPrev && (
+      {/* Nav Buttons (1x scale only) */}
+      {scale === 1 && hasPrev && (
         <button 
           type="button"
           onClick={(e) => { e.stopPropagation(); onPrev(); }}
@@ -130,7 +258,7 @@ const Lightbox: React.FC<LightboxProps> = ({ photo, onClose, onNext, onPrev, has
           </svg>
         </button>
       )}
-      {hasNext && (
+      {scale === 1 && hasNext && (
         <button 
           type="button"
           onClick={(e) => { e.stopPropagation(); onNext(); }}
@@ -143,8 +271,9 @@ const Lightbox: React.FC<LightboxProps> = ({ photo, onClose, onNext, onPrev, has
         </button>
       )}
 
+      {/* Info Card */}
       <div 
-        className="absolute top-4 left-4 md:top-6 md:left-6 w-64 md:w-80 max-w-[70vw] bg-black/30 backdrop-blur-xl rounded-xl md:rounded-2xl p-3 md:p-5 text-white border border-white/10 shadow-2xl animate-fade-in-short z-40"
+        className="absolute top-4 left-4 md:top-6 md:left-6 w-64 md:w-80 max-w-[70vw] bg-black/30 backdrop-blur-xl rounded-xl md:rounded-2xl p-3 md:p-5 text-white border border-white/10 shadow-2xl z-40 pointer-events-auto"
         onClick={e => e.stopPropagation()}
       >
         <dl className="space-y-1 md:space-y-3">
