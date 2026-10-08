@@ -65,7 +65,7 @@ export default function DockNav({
         ref={containerRef}
         onMouseMove={(e) => mouseX.set(e.pageX)}
         onMouseLeave={() => mouseX.set(Infinity)}
-        className="pointer-events-auto relative flex items-center gap-2 px-4 py-3 rounded-2xl bg-black/60 backdrop-blur-xl border border-white/10 shadow-2xl h-14 overflow-x-auto no-scrollbar max-w-[95vw] sm:max-w-none"
+        className="pointer-events-auto relative flex items-center gap-1.5 px-3 py-2.5 rounded-full bg-black/40 backdrop-blur-3xl border border-white/20 ring-1 ring-white/10 shadow-[0_24px_64px_rgba(0,0,0,0.7)] h-14 overflow-x-auto no-scrollbar max-w-[95vw] sm:max-w-none"
         style={{
           scrollbarWidth: 'none', // Hide for Firefox
           msOverflowStyle: 'none', // Hide for IE
@@ -81,7 +81,7 @@ export default function DockNav({
             width: focusRect.width,
             opacity: focusRect.opacity,
           }}
-          transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+          transition={{ type: 'spring', stiffness: 380, damping: 30 }}
           style={{ top: 0, bottom: 0, left: 0 }} // Align to the left of the parent
         >
           {/* 
@@ -119,7 +119,7 @@ const DockItem = React.forwardRef<HTMLButtonElement, any>(({ label, isActive, on
   React.useImperativeHandle(ref, () => buttonRef.current!);
 
   const distance = 150;
-  const magnification = 1.3;
+  const magnification = 1.25;
 
   const mouseDistance = useTransform(mouseX, (val: number) => {
     const rect = buttonRef.current?.getBoundingClientRect() ?? { x: 0, width: 0 };
@@ -128,22 +128,24 @@ const DockItem = React.forwardRef<HTMLButtonElement, any>(({ label, isActive, on
 
   const scaleSize = useSpring(
     useTransform(mouseDistance, [-distance, 0, distance], [1, magnification, 1]),
-    { mass: 0.1, stiffness: 150, damping: 12 }
+    { mass: 0.1, stiffness: 220, damping: 18 }
   );
 
   return (
     <motion.button
       ref={buttonRef}
       onClick={onClick}
+      whileTap={{ scale: 0.91 }}
+      transition={{ type: 'spring', stiffness: 600, damping: 25 }}
       style={{ 
         scale: scaleSize,
         filter: isActive ? 'blur(0px)' : `blur(${blurAmount}px)`,
       }}
       // px-4 is our "cushion" - if you change this, change the mx-4 in the frame above
       className={`
-        relative z-10 px-4 h-full flex items-center justify-center text-[10px] md:text-[11px] 
-        uppercase tracking-[0.25em] transition-[filter] duration-700 ease-out outline-none
-        ${isActive ? 'text-white font-bold' : 'text-white/30 hover:text-white/60'}
+        relative z-10 px-3.5 h-full flex items-center justify-center text-[10px] md:text-[11px] 
+        uppercase tracking-[0.18em] transition-[filter,color] duration-300 ease-out outline-none select-none active:opacity-70
+        ${isActive ? 'text-white font-semibold' : 'text-white/40 hover:text-white/80'}
       `}
     >
       <span className="block leading-none">{label}</span>

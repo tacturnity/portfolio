@@ -273,7 +273,7 @@ const Lightbox: React.FC<LightboxProps> = ({ photo, onClose, onNext, onPrev, has
 
       {/* Info Card */}
       <div 
-        className="absolute top-4 left-4 md:top-6 md:left-6 w-64 md:w-80 max-w-[70vw] bg-black/30 backdrop-blur-xl rounded-xl md:rounded-2xl p-3 md:p-5 text-white border border-white/10 shadow-2xl z-40 pointer-events-auto"
+        className="absolute top-4 left-4 md:top-6 md:left-6 w-64 md:w-80 max-w-[70vw] bg-black/30 backdrop-blur-xl rounded-2xl md:rounded-3xl p-3 md:p-5 text-white border border-white/15 shadow-[0_25px_60px_rgba(0,0,0,0.8)] z-40 backdrop-blur-2xl pointer-events-auto"
         onClick={e => e.stopPropagation()}
       >
         <dl className="space-y-1 md:space-y-3">

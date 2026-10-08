@@ -29,21 +29,21 @@ const Header: React.FC<HeaderProps> = ({
             {showTitle ? (
               <motion.div 
                 key="branding" 
-                initial={{ opacity: 0, y: -120 }} 
-                animate={{ opacity: 1, y: 0 }} 
-                exit={{ opacity: 0, y: -120 }} 
+                initial={{ opacity: 0, y: -40, scale: 0.98 }} 
+                animate={{ opacity: 1, y: 0, scale: 1 }} 
+                exit={{ opacity: 0, y: -30, scale: 0.98 }} 
                 transition={{ 
                   type: 'spring', 
-                  stiffness: titleSpringStiffness, 
-                  damping: titleSpringDamping, 
-                  mass: titleSpringMass 
+                  stiffness: 260, 
+                  damping: 26, 
+                  mass: 0.8 
                 }}
                 className="flex flex-col items-center w-full"
               >
-                <div className="w-full flex justify-center items-center px-14 md:px-0">
+                <div className="w-full flex justify-center items-center px-14 md:px-0 tracking-tight">
                   <TextPressure text="Cookaracha's" minFontSize={24} />
                 </div>
-                <p className="text-[10px] md:text-[14px] tracking-[0.4em] md:tracking-[0.6em] text-neutral-600 uppercase mt-4 text-center px-6">
+                <p className="text-[10px] md:text-[13px] tracking-[0.25em] md:tracking-[0.35em] text-neutral-400 font-medium uppercase mt-3 text-center px-6 antialiased">
                   Photography Portfolio
                 </p>
               </motion.div>

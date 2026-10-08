@@ -2,7 +2,7 @@ import { useRef, useEffect, useState } from 'react';
 import { motion, useSpring, useMotionValue } from 'framer-motion';
 import React from 'react';
 
-const springValues = { damping: 30, stiffness: 100, mass: 2 };
+const springValues = { damping: 24, stiffness: 160, mass: 1 };
 
 export default function TiltedCard({
   imageSrc,
@@ -71,7 +71,7 @@ export default function TiltedCard({
           // Removed loading="lazy" completely to fix standard WebKit/Chrome absolute-grid loading bugs [3]
           loading="lazy"
           decoding="async"   
-          className="absolute top-0 left-0 object-cover rounded-[24px] shadow-2xl border border-white/5"
+          className="absolute top-0 left-0 object-cover rounded-[28px] shadow-2xl border border-white/10 ring-1 ring-white/5"
           style={{ width: '100%', height: '100%' }}
         />
       </motion.div>

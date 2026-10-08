@@ -365,13 +365,13 @@ export default function App() {
                       initial="enter" 
                       animate="center" 
                       exit="exit" 
-                      transition={{ type: "spring", stiffness: 450, damping: 38 }}
+                      transition={{ type: "spring", stiffness: 320, damping: 32, mass: 1 }}
                       drag="x"
                       dragConstraints={{ left: 0, right: 0 }}
-                      dragElastic={0.5}
+                      dragElastic={0.4}
                       onDragEnd={(event, info) => {
-                        const threshold = 150;
-                        const velocityThreshold = 500;
+                        const threshold = 120;
+                        const velocityThreshold = 400;
                         if (info.offset.x < -threshold || info.velocity.x < -velocityThreshold) {
                           const currentIndex = NAV_ITEMS.indexOf(activeView);
                           if (currentIndex < NAV_ITEMS.length - 1) handleViewChange(NAV_ITEMS[currentIndex + 1]);
@@ -393,13 +393,13 @@ export default function App() {
                       initial="enter" 
                       animate="center" 
                       exit="exit" 
-                      transition={{ type: "spring", stiffness: 450, damping: 38 }}
+                      transition={{ type: "spring", stiffness: 320, damping: 32, mass: 1 }}
                       drag="x"
                       dragConstraints={{ left: 0, right: 0 }}
-                      dragElastic={0.5}
+                      dragElastic={0.4}
                       onDragEnd={(event, info) => {
-                        const threshold = 150;
-                        const velocityThreshold = 500;
+                        const threshold = 120;
+                        const velocityThreshold = 400;
                         if (info.offset.x < -threshold || info.velocity.x < -velocityThreshold) {
                           const currentIndex = NAV_ITEMS.indexOf(activeView);
                           if (currentIndex < NAV_ITEMS.length - 1) handleViewChange(NAV_ITEMS[currentIndex + 1]);

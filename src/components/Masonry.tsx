@@ -182,7 +182,7 @@ export default function Masonry({
         transition: {
           delay: isDissolve ? 0 : localStaggerIndex * staggerDelay,
           duration: isDissolve ? 0.35 : slideDuration,
-          ease: isDissolve ? 'easeOut' : [0.16, 1, 0.3, 1],
+          ease: isDissolve ? 'easeOut' : [0.2, 0.9, 0.3, 1],
         }
       };
     },
