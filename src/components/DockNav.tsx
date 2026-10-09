@@ -1,4 +1,3 @@
-import { Sun } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 
@@ -23,12 +22,12 @@ export default function DockNav({
   
   const [focusRect, setFocusRect] = useState({ x: 0, width: 0, opacity: 0 });
 
+  const activeIndex = items.indexOf(activeItem);
+
   useEffect(() => {
-    const activeIndex = items.indexOf(activeItem);
     const activeEl = itemRefs.current[activeIndex];
     
     if (activeIndex !== -1 && activeEl) {
-      // OffsetLeft is relative to the container, making it 100% accurate for X
       const x = activeEl.offsetLeft;
       const width = activeEl.offsetWidth;
 
@@ -38,12 +37,10 @@ export default function DockNav({
         opacity: 1
       });
 
-      // Smoothly scroll the container to center the active element
       requestAnimationFrame(() => {
         const container = containerRef.current;
         if (container) {
           const containerWidth = container.offsetWidth;
-          // Target scrollLeft places the active element perfectly in the center of the dock view
           const targetScrollLeft = x - (containerWidth / 2) + (width / 2);
           
           container.scrollTo({
@@ -53,11 +50,10 @@ export default function DockNav({
         }
       });
     }
-  }, [activeItem, items]);
+  }, [activeItem, items, activeIndex]);
 
   return (
     <nav 
-      // Force higher 3D stacking layer on iOS to resolve parent transform bleed-through overlay blocking scroll
       style={{ transform: 'translate3d(0, 0, 100px)', transformStyle: 'preserve-3d' }}
       className="fixed bottom-8 left-0 right-0 z-50 flex justify-center pointer-events-none font-['Lexend']"
     >
@@ -67,14 +63,14 @@ export default function DockNav({
         onMouseLeave={() => mouseX.set(Infinity)}
         className="pointer-events-auto relative flex items-center gap-1.5 px-3 py-2.5 rounded-full bg-black/40 backdrop-blur-3xl border border-white/20 ring-1 ring-white/10 shadow-[0_24px_64px_rgba(0,0,0,0.7)] h-14 overflow-x-auto no-scrollbar max-w-[95vw] sm:max-w-none"
         style={{
-          scrollbarWidth: 'none', // Hide for Firefox
-          msOverflowStyle: 'none', // Hide for IE
-          touchAction: 'pan-x'    // Allow strictly horizontal swipe gestures inside dock
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none',
+          touchAction: 'pan-x'
         }}
       >
         {/* TRUE FOCUS FRAME */}
         <motion.div
-          className="absolute pointer-events-none flex items-center justify-center"
+          className="absolute pointer-events-none flex items-center justify-center px-1"
           initial={false}
           animate={{
             x: focusRect.x,
@@ -82,19 +78,44 @@ export default function DockNav({
             opacity: focusRect.opacity,
           }}
           transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-          style={{ top: 0, bottom: 0, left: 0 }} // Align to the left of the parent
+          style={{ top: 0, bottom: 0, left: 0 }}
         >
           {/* 
-            THE BRACKETS:
-            We wrap them in a container that has horizontal padding 
-            matching the button's padding (px-4 = 1rem = 16px).
-            This makes the brackets hug the TEXT instead of the whole button.
+            Four curved corner brackets hugging the text with dynamic pill rounding matching outer capsule curve 
           */}
-          <div className="relative w-full h-[28px] mx-2"> 
-            <span className="absolute -top-1 -left-1 w-2 h-2 border-t-2 border-l-2" style={{ borderColor }} />
-            <span className="absolute -top-1 -right-1 w-2 h-2 border-t-2 border-r-2" style={{ borderColor }} />
-            <span className="absolute -bottom-1 -left-1 w-2 h-2 border-b-2 border-l-2" style={{ borderColor }} />
-            <span className="absolute -bottom-1 -right-1 w-2 h-2 border-b-2 border-r-2" style={{ borderColor }} />
+          <div className="relative w-full h-[32px] mx-2"> 
+            <span 
+              className={`absolute border-t-2 border-l-2 transition-all duration-300 ${
+                activeIndex === 0 
+                  ? '-top-1 -left-1 w-3 h-3 rounded-tl-2xl' 
+                  : '-top-1 -left-1 w-3 h-3 rounded-tl-md'
+              }`} 
+              style={{ borderColor }} 
+            />
+            <span 
+              className={`absolute border-t-2 border-r-2 transition-all duration-300 ${
+                activeIndex === items.length - 1 
+                  ? '-top-1 -right-1 w-3 h-3 rounded-tr-2xl' 
+                  : '-top-1 -right-1 w-3 h-3 rounded-tr-md'
+              }`} 
+              style={{ borderColor }} 
+            />
+            <span 
+              className={`absolute border-b-2 border-l-2 transition-all duration-300 ${
+                activeIndex === 0 
+                  ? '-bottom-1 -left-1 w-3 h-3 rounded-bl-2xl' 
+                  : '-bottom-1 -left-1 w-3 h-3 rounded-bl-md'
+              }`} 
+              style={{ borderColor }} 
+            />
+            <span 
+              className={`absolute border-b-2 border-r-2 transition-all duration-300 ${
+                activeIndex === items.length - 1 
+                  ? '-bottom-1 -right-1 w-3 h-3 rounded-br-2xl' 
+                  : '-bottom-1 -right-1 w-3 h-3 rounded-br-md'
+              }`} 
+              style={{ borderColor }} 
+            />
           </div>
         </motion.div>
 
@@ -140,8 +161,8 @@ const DockItem = React.forwardRef<HTMLButtonElement, any>(({ label, isActive, on
       style={{ 
         scale: scaleSize,
         filter: isActive ? 'blur(0px)' : `blur(${blurAmount}px)`,
+        transformOrigin: 'center center'
       }}
-      // px-4 is our "cushion" - if you change this, change the mx-4 in the frame above
       className={`
         relative z-10 px-3.5 h-full flex items-center justify-center text-[10px] md:text-[11px] 
         uppercase tracking-[0.18em] transition-[filter,color] duration-300 ease-out outline-none select-none active:opacity-70

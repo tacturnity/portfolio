@@ -11,43 +11,50 @@ export default function PerfCounter() {
   const lastUpdate = useRef(performance.now());
   const lastFrameTimestamp = useRef(performance.now());
 
+  const modeRef = useRef<'scroll' | 'pinned' | 'hidden'>(mode);
+  useEffect(() => { modeRef.current = mode; }, [mode]);
+
   useEffect(() => {
     let animId: number;
 
     const tick = (now: number) => {
-      frameCount.current += 1;
+      // Skip sampling entirely while the counter is hidden so it costs nothing
+      // until the user actually asks to see it.
+      if (modeRef.current !== 'hidden') {
+        frameCount.current += 1;
 
-      const delta = now - lastFrameTimestamp.current;
-      lastFrameTimestamp.current = now;
+        const delta = now - lastFrameTimestamp.current;
+        lastFrameTimestamp.current = now;
 
-      // Update 5 times every second (every 200ms)
-      const elapsedSinceUpdate = now - lastUpdate.current;
-      if (elapsedSinceUpdate >= 200) {
-        const calculatedFps = Math.round(
-          (frameCount.current * 1000) / elapsedSinceUpdate
-        );
+        // Update 5 times every second (every 200ms)
+        const elapsedSinceUpdate = now - lastUpdate.current;
+        if (elapsedSinceUpdate >= 200) {
+          const calculatedFps = Math.round(
+            (frameCount.current * 1000) / elapsedSinceUpdate
+          );
 
-        const targetFrameTime = 1000 / Math.max(calculatedFps, 60);
-        const frameLag = Math.max(0, delta - targetFrameTime);
-        
-        const rawCpu = Math.min(
-          99,
-          Math.max(4, Math.round((frameLag / targetFrameTime) * 100 + (calculatedFps < 55 ? 30 : 10)))
-        );
+          const targetFrameTime = 1000 / Math.max(calculatedFps, 60);
+          const frameLag = Math.max(0, delta - targetFrameTime);
 
-        const rawGpu = Math.min(
-          99,
-          Math.max(6, Math.round((delta / 16.6) * 35 + (calculatedFps < 50 ? 45 : 12)))
-        );
+          const rawCpu = Math.min(
+            99,
+            Math.max(4, Math.round((frameLag / targetFrameTime) * 100 + (calculatedFps < 55 ? 30 : 10)))
+          );
 
-        setStats({
-          cpu: rawCpu,
-          gpu: rawGpu,
-          fps: Math.min(calculatedFps, 999)
-        });
+          const rawGpu = Math.min(
+            99,
+            Math.max(6, Math.round((delta / 16.6) * 35 + (calculatedFps < 50 ? 45 : 12)))
+          );
 
-        frameCount.current = 0;
-        lastUpdate.current = now;
+          setStats({
+            cpu: rawCpu,
+            gpu: rawGpu,
+            fps: Math.min(calculatedFps, 999)
+          });
+
+          frameCount.current = 0;
+          lastUpdate.current = now;
+        }
       }
 
       animId = requestAnimationFrame(tick);

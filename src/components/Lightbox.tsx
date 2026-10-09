@@ -272,10 +272,10 @@ const Lightbox: React.FC<LightboxProps> = ({ photo, onClose, onNext, onPrev, has
       )}
 
       {/* Info Card */}
-      <div 
-        className="absolute top-4 left-4 md:top-6 md:left-6 w-64 md:w-80 max-w-[70vw] bg-black/30 backdrop-blur-xl rounded-2xl md:rounded-3xl p-3 md:p-5 text-white border border-white/15 shadow-[0_25px_60px_rgba(0,0,0,0.8)] z-40 backdrop-blur-2xl pointer-events-auto"
-        onClick={e => e.stopPropagation()}
-      >
+        <div 
+          className="absolute top-4 left-4 md:top-6 md:left-6 w-[calc(100%-32px)] max-w-[280px] sm:max-w-[320px] md:w-80 bg-black/30 backdrop-blur-xl rounded-2xl md:rounded-3xl p-3 md:p-5 text-white border border-white/15 shadow-[0_25px_60px_rgba(0,0,0,0.8)] z-40 backdrop-blur-2xl pointer-events-auto"
+          onClick={e => e.stopPropagation()}
+        >
         <dl className="space-y-1 md:space-y-3">
           {filename && <MetadataRow label="File" value={filename} truncate={true} />}
           <MetadataRow label="Date" value={photo.dateCaptured} />

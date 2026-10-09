@@ -44,13 +44,11 @@ const TextPressure: React.FC<TextPressureProps> = ({
 
   // Inside TextPressure.tsx - Update the setSize function
 const setSize = useCallback(() => {
-  if (!containerRef.current) return;
-  const { width: containerW } = containerRef.current.getBoundingClientRect();
-  
-  // Adjusted logic: smaller multiplier for mobile
   const isMobile = window.innerWidth < 768;
+  // Use stable viewport width capped to header max-w (800px) instead of fluctuating bounding rects during animations
+  const availableW = Math.min(window.innerWidth * (isMobile ? 0.85 : 0.65), 800);
   const multiplier = isMobile ? 0.8 : 1.5; 
-  let newFontSize = (containerW / (text.length / multiplier));
+  let newFontSize = (availableW / (text.length / multiplier));
   
   // Clamp the font size so it doesn't get ridiculously huge or tiny
   const clampedSize = Math.min(Math.max(newFontSize, minFontSize), isMobile ? 40 : 120);

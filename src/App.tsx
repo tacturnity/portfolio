@@ -1,9 +1,7 @@
 // src/App.tsx
-import React, { useState, useMemo, useRef, useEffect, Component, startTransition } from 'react';
-import type { ErrorInfo, ReactNode } from 'react';
+import React, { useState, useMemo, useRef, useEffect, startTransition } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import photoData from './photos.json';
-import { Sun } from 'lucide-react';
 
 // Component Imports
 import Header from './components/Header';
@@ -12,13 +10,52 @@ import DockNav from './components/DockNav';
 import About from './components/About';
 import Lightbox from './components/Lightbox';
 import GradualBlur from './components/GradualBlur';
-import LightRays from './components/LightRays'; 
+import LightRays from './components/LightRays';
 import Wall3D from './components/Wall3d';
 import PerfCounter from './components/PerfCounter';
+import ErrorBoundary from './components/ErrorBoundary';
 
 const NAV_ITEMS = ['Home', 'All Work', 'Animals', 'Misc', 'People', 'Panos', 'About Me'];
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Smoothly scroll the window back to the top and resolve once it has arrived.
+// Resolves immediately if already at (or near) the top, so tab switches at
+// the top of the page never add any delay. Includes a safety timeout so the
+// promise can never hang if a scrollend/scroll event is missed.
+const scrollToTop = (): Promise<void> =>
+  new Promise((resolve) => {
+    const scroller = () =>
+      document.scrollingElement || document.documentElement;
+
+    if (window.scrollY <= 20) {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      resolve();
+      return;
+    }
+
+    window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('scrollend', finish);
+      window.clearTimeout(timer);
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      resolve();
+    };
+    const onScroll = () => {
+      if (scroller().scrollTop <= 2) finish();
+    };
+    const timer = window.setTimeout(finish, 800);
+
+    if ('onscrollend' in window) {
+      window.addEventListener('scrollend', finish, { passive: true });
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+  });
 
 const parseCustom = (str: any) => {
   if (typeof str !== 'string') {
@@ -31,48 +68,6 @@ const parseCustom = (str: any) => {
     isAbout: about === 'true'
   };
 };
-
-// --- REACT ERROR BOUNDARY COMPONENT ---
-interface ErrorBoundaryProps {
-  children?: ReactNode;
-}
-interface ErrorBoundaryState {
-  hasError: boolean;
-  error: Error | null;
-  errorInfo: ErrorInfo | null;
-}
-class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  public state: ErrorBoundaryState = {
-    hasError: false,
-    error: null,
-    errorInfo: null
-  };
-
-  public static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    return { hasError: true, error, errorInfo: null };
-  }
-
-  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error("Uncaught layout rendering error:", error, errorInfo);
-    this.setState({ errorInfo });
-  }
-
-  public render() {
-    if (this.state.hasError) {
-      return (
-        <div className="p-8 bg-[#111] text-red-400 font-mono min-h-screen z-50 relative border-2 border-red-500 rounded-lg">
-          <h1 className="text-2xl font-bold mb-4">🚨 Rendering Exception Caught!</h1>
-          <p className="text-white text-lg mb-2">{this.state.error?.toString()}</p>
-          <pre className="bg-black/80 p-4 rounded border border-zinc-800 text-xs text-zinc-300 overflow-auto">
-            {this.state.errorInfo?.componentStack}
-          </pre>
-        </div>
-      );
-    }
-    return this.props.children;
-  }
-}
-// --------------------------------------
 
 export default function App() {
   const [activeView, setActiveView] = useState('Home');
@@ -95,17 +90,30 @@ export default function App() {
     }
   }, []);
 
+  // Lifecycle telemetry: does App keep the 3D canvas alive or fully unmount it?
+  useEffect(() => {
+    if (isCanvasMounted) {
+      console.log('[Lifecycle] App: Wall3D MOUNTED (isCanvasMounted=true)');
+    } else {
+      console.log('[Lifecycle] App: Wall3D UNMOUNTED (isCanvasMounted=false)');
+    }
+  }, [isCanvasMounted]);
+
   const handleViewChange = async (newView: string) => {
     if (newView === activeView || isAnimating.current) return;
     isAnimating.current = true;
-    
+
+    // Tab transition state logger (from -> to -> wallState).
+    console.log('[Tab Change]', { from: activeView, to: newView, wallState });
+
+    // UX: if the page is scrolled down, smoothly glide back to the top first,
+    // then start the tab transition so the exit/entry animations play cleanly.
+    await scrollToTop();
+
     startTransition(() => {
       setPendingView(newView);
       setSelectedPhoto(null);
     });
-
-    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-    document.body.style.overflow = 'hidden';
 
     const newIdx = NAV_ITEMS.indexOf(newView);
     const oldIdx = NAV_ITEMS.indexOf(activeView);
@@ -118,11 +126,9 @@ export default function App() {
     const isFromCategory = !['Home', 'About Me'].includes(activeView);
     const isToCategory = !['Home', 'About Me'].includes(newView);
 
-    if (isToAbout || isFromAbout) {
-      setTransitionType('dissolve');
-    } else {
-      setTransitionType('cascade');
-    }
+    // Always use the directional slide/cascade for the outer view transitions,
+    // including to/from "About Me" so it slides exactly like the other tabs.
+    setTransitionType('cascade');
 
     if ((isFromCategory || isFromAbout) && (isToCategory || isToAbout)) {
       setIsMasonryVisible(true);
@@ -134,7 +140,6 @@ export default function App() {
       
       await sleep(500); 
 
-      document.body.style.overflow = '';
       isAnimating.current = false;
       return;
     }
@@ -200,7 +205,6 @@ export default function App() {
       setPendingView(null);
     }
 
-    document.body.style.overflow = '';
     isAnimating.current = false;
   };
 
@@ -275,14 +279,25 @@ export default function App() {
       onTouchMove={onTouchMove} 
       onTouchEnd={onTouchEndEvent}
     >
-      <LightRays 
-        raysColor="#fb7185" 
-        raysSpeed={0.2} 
-        raysOrigin="top-center" 
-        lightSpread={0.5} 
-        rayLength={0.8} 
-        maskStrength={0.5} 
-      />
+      {/* LightRays backdrop: hidden while the 3D wall (Home) is mounted so the
+          sphere floats in a pure pitch-black void; fades back in for masonry views. */}
+      <div
+        style={{
+          transitionProperty: 'opacity',
+          transitionDuration: '600ms',
+          transitionTimingFunction: 'ease',
+        }}
+        className={`fixed inset-0 z-0 ${isCanvasMounted ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+      >
+        <LightRays 
+          raysColor="#fb7185" 
+          raysSpeed={0.2} 
+          raysOrigin="top-center" 
+          lightSpread={0.5} 
+          rayLength={0.8} 
+          maskStrength={0.5} 
+        />
+      </div>
 
       {/* Header & Performance Counter Container */}
       <AnimatePresence>
@@ -334,23 +349,24 @@ export default function App() {
             {(() => {
               const slideVariants = {
                 enter: (customStr: string) => {
-                  const { direction, transitionType } = parseCustom(customStr);
-                  const isDissolve = transitionType === 'dissolve' || transitionType === 'instant';
+                  const { direction } = parseCustom(customStr);
                   return {
                     opacity: 0, 
-                    x: isDissolve ? 0 : direction * 80,
+                    x: direction * 80,
+                    scale: 1,
                   };
                 },
                 center: { 
                   opacity: 1, 
                   x: 0,
+                  scale: 1,
                 },
                 exit: (customStr: string) => {
-                  const { direction, transitionType } = parseCustom(customStr);
-                  const isDissolve = transitionType === 'dissolve' || transitionType === 'instant';
+                  const { direction } = parseCustom(customStr);
                   return {
                     opacity: 0, 
-                    x: isDissolve ? 0 : -direction * 80,
+                    x: -direction * 80,
+                    scale: 1,
                   };
                 }
               };

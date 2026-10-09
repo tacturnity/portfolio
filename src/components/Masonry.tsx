@@ -1,6 +1,7 @@
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import TiltedCard from './TiltedCard';
+import { computeMasonryLayout } from '../lib/masonry';
 
 // Helper to safely deserialize transition parameters for Framer Motion
 const parseCardCustom = (str: any) => {
@@ -62,88 +63,32 @@ export default function Masonry({
 
   const gridItems = useMemo(() => {
     if (width === 0 || !items || items.length === 0) return [];
-    
+
     const gap = width < 768 ? 10 : 20;
-    const columnWidth = (width - (columns - 1) * gap) / columns;
-    const colHeights = new Array(columns).fill(0);
-
-    let balanceCounter = 0;
-    let landscapeCount = 0;
-    let portraitCount = 0;
-
-    if (enableCrop) {
-      items.forEach((item: any) => {
-        const isPano = item.category?.toLowerCase() === 'panos';
-        if (!isPano) {
-          const w = parseFloat(item.width) || 1000;
-          const h = parseFloat(item.height) || 1000;
-          if (w >= h) landscapeCount++;
-          else portraitCount++;
-        }
-      });
-      balanceCounter = Math.round((landscapeCount - portraitCount) / 2);
-    }
+    const slots = computeMasonryLayout(items, {
+      containerWidth: width,
+      columns,
+      gap,
+      enableCrop,
+      enablePanoSpan,
+    });
+    const slotById = new Map(slots.map(s => [s.id, s]));
 
     return items.map((item: any) => {
+      const slot = slotById.get(item.id) ?? { x: 0, y: 0, w: 0, h: 0 };
       const isPano = item.category?.toLowerCase() === 'panos';
-      const naturalW = parseFloat(item.width) || 1000;
-      const naturalH = parseFloat(item.height) || 1000;
-      const isNaturalLandscape = naturalW >= naturalH;
-      const naturalAspectRatio = naturalW / naturalH;
 
-      let span = 1;
-      let targetAspectRatio = naturalAspectRatio;
-      let displaySrc = item.gridSrc || item.url_medium || item.url_large; 
-
-      if (enableCrop) {
-        if (isPano && enablePanoSpan) {
-          span = columns;
-          displaySrc = item.editedSrc || item.url_large; 
-        } else {
-          let forceOrientation = isNaturalLandscape ? 'landscape' : 'portrait';
-          if (!isPano) {
-            if (balanceCounter > 0 && isNaturalLandscape) {
-              forceOrientation = 'portrait';
-              balanceCounter--; 
-            } else if (balanceCounter < 0 && !isNaturalLandscape) {
-              forceOrientation = 'landscape';
-              balanceCounter++;
-            }
-          }
-          targetAspectRatio = forceOrientation === 'landscape' ? 4 / 3 : 3 / 4;
-        }
-      } else {
-        if (isPano && enablePanoSpan) {
-          span = columns;
-          displaySrc = item.editedSrc || item.url_large;
-        }
+      // Pano crops hire the full-resolution source; everything else uses medium.
+      let displaySrc = item.gridSrc || item.url_medium || item.url_large;
+      if (isPano && enablePanoSpan) {
+        displaySrc = item.editedSrc || item.url_large;
       }
 
-      const finalWidth = (columnWidth * span) + (gap * (span - 1));
-      const targetHeight = finalWidth / targetAspectRatio;
-
-      let targetCol = 0;
-      let minY = Infinity;
-      for (let i = 0; i <= columns - span; i++) {
-        const maxHeightInRange = Math.max(...colHeights.slice(i, i + span));
-        if (maxHeightInRange < minY) {
-          minY = maxHeightInRange;
-          targetCol = i;
-        }
-      }
-
-      const x = targetCol * (columnWidth + gap);
-      const y = minY;
-
-      for (let i = targetCol; i < targetCol + span; i++) {
-        colHeights[i] = y + targetHeight + gap;
-      }
-
-      return { ...item, x, y, w: finalWidth, h: targetHeight, displaySrc };
+      return { ...item, x: slot.x, y: slot.y, w: slot.w, h: slot.h, displaySrc };
     });
   }, [items, columns, width, enableCrop, enablePanoSpan]);
 
-  const totalHeight = Math.max(0, ...gridItems.map(i => i.y + i.h));
+  const totalHeight = gridItems.reduce((max, i) => Math.max(max, i.y + i.h), 0);
 
   const cardVariants = {
     hidden: (customStr: string) => {
@@ -159,7 +104,7 @@ export default function Masonry({
         opacity: 0,
         x: isDissolve ? 0 : (direction >= 0 ? 80 : -80), 
         y: 0,
-        scale: isDissolve ? 1 : 0.98,
+        scale: 1,
       };
     },
     visible: (customStr: string) => {
@@ -199,7 +144,7 @@ export default function Masonry({
         opacity: 0,
         x: isDissolve ? 0 : (direction >= 0 ? -80 : 80), 
         y: 0,
-        scale: isDissolve ? 1 : 0.98,
+        scale: 1,
         transition: {
           duration: isDissolve ? 0.25 : slideDuration * 0.4,
           ease: isDissolve ? 'easeIn' : [0.16, 1, 0.3, 1],

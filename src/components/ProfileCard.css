@@ -300,11 +300,12 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(30px);
-  -webkit-backdrop-filter: blur(30px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 4.5cqw;
+  background: rgba(0, 0, 0, 0.4); /* Translucent dark glassmorphism matching bottom navbar */
+  backdrop-filter: blur(24px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
+  border: 1px solid rgba(255, 255, 255, 0.2); /* Matches navbar border-white/20 */
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1), 0 10px 30px rgba(0, 0, 0, 0.4);
+  border-radius: 9999px; /* Full pill shape matching bottom navbar rounded-full */
   padding: 2.5cqw 3.5cqw;
   pointer-events: auto;
   gap: 2cqw;
@@ -355,9 +356,9 @@
 }
 
 .pc-contact-btn {
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 2.2cqw;
-  padding: 2.5cqw 4cqw;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 9999px; /* Full pill shape matching bottom navbar rounded-full */
+  padding: 2.5cqw 5cqw; /* Balanced capsule pill padding */
   font-size: 2.8cqw;
   font-weight: 600;
   color: rgba(255, 255, 255, 0.9);
@@ -367,6 +368,7 @@
   -webkit-backdrop-filter: blur(10px);
   pointer-events: auto;
   white-space: nowrap;
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .pc-contact-btn:hover {

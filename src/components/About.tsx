@@ -3,9 +3,9 @@ import React from 'react';
 import ProfileCard from './ProfileCard';
 import AnimatedContent from './AnimatedContent';
 
-// Image imports
-import pfpImage from './pfp.jpg'; 
-import pfp2Image from './pfp2.jpg'; 
+// Image imports (optimized WebP builds of the same profile photos)
+import pfpImage from './pfp.webp';
+import pfp2Image from './pfp2.webp'; 
 
 const About: React.FC = () => {
   
@@ -43,7 +43,7 @@ const About: React.FC = () => {
       <div className="flex flex-col justify-center items-center landscape:items-start text-center landscape:text-left space-y-6 w-full max-w-lg">
         <AnimatedContent distance={40} delay={0.2}>
           <div className="space-y-2">
-            <h2 className="text-5xl md:text-6xl font-bold tracking-tighter text-rose-400 font-['Lexend'] uppercase">
+            <h2 className="text-[clamp(1.75rem,10.5vw,3.75rem)] font-bold tracking-tighter text-rose-400 font-['Lexend'] uppercase">
               pimpilinpausa
             </h2>
             <p className="text-[12px] uppercase tracking-[0.6em] text-neutral-500 font-medium">

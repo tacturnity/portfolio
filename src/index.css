@@ -5,15 +5,14 @@
   --font-lexend: "Lexend", sans-serif;
 }
 
+html {
+  scrollbar-gutter: stable;
+}
+
 body {
   @apply bg-black text-white antialiased;
   font-family: 'Lexend', sans-serif;
   margin: 0;
-}
-.mix-blend-difference {
-  mix-blend-mode: difference;
-  /* Optional: adds a tiny bit of protection if the blend is too aggressive */
-  text-shadow: 0px 0px 1px rgba(0,0,0,0.1); 
 }
 .no-scrollbar::-webkit-scrollbar {
   display: none;
