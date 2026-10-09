@@ -17,6 +17,22 @@ import ErrorBoundary from './components/ErrorBoundary';
 
 const NAV_ITEMS = ['Home', 'All Work', 'Animals', 'Misc', 'People', 'Panos', 'About Me'];
 
+// Landing view per device class. The Home view mounts the heavy 3D photo wall,
+// so phones boot straight into the lightweight masonry grid ("All Work")
+// instead, while desktops keep the 3D wall as the default.
+// 768px matches the `md` breakpoint used across the layout and the existing
+// `window.innerWidth < 768` mobile checks in LightRays/TextPressure.
+const MOBILE_BREAKPOINT = 768;
+const DESKTOP_LANDING_VIEW = 'Home';
+const MOBILE_LANDING_VIEW = 'All Work';
+
+// Resolved once per page load, so a mid-session resize or device rotation can
+// never swap the view out from under the visitor.
+const resolveLandingView = () =>
+  typeof window !== 'undefined' && window.innerWidth < MOBILE_BREAKPOINT
+    ? MOBILE_LANDING_VIEW
+    : DESKTOP_LANDING_VIEW;
+
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 // Smoothly scroll the window back to the top and resolve once it has arrived.
@@ -70,14 +86,18 @@ const parseCustom = (str: any) => {
 };
 
 export default function App() {
-  const [activeView, setActiveView] = useState('Home');
+  // Landing view is decided once per page load: mobile devices open on
+  // "All Work" (masonry grid, no WebGL), desktops open on "Home" (3D wall).
+  const [landingView] = useState<string>(resolveLandingView);
+  const [activeView, setActiveView] = useState(landingView);
   const [pendingView, setPendingView] = useState<string | null>(null);
-  const [wallState, setWallState] = useState('Home'); 
-  const [isCanvasMounted, setIsCanvasMounted] = useState(true);
+  const [wallState, setWallState] = useState(landingView);
+  const [isCanvasMounted, setIsCanvasMounted] = useState(landingView === DESKTOP_LANDING_VIEW);
   const [direction, setDirection] = useState(0); 
   const [transitionType, setTransitionType] = useState<'cascade' | 'dissolve' | 'instant'>('dissolve');
   const isAnimating = useRef(false);
-  const [isMasonryVisible, setIsMasonryVisible] = useState(false);
+  // The masonry grid is the landing surface whenever we don't start on Home.
+  const [isMasonryVisible, setIsMasonryVisible] = useState(landingView !== DESKTOP_LANDING_VIEW);
   const [selectedPhoto, setSelectedPhoto] = useState<any>(null);
   const [enableCrop, setEnableCrop] = useState(false);
   const [enablePanoSpan, setEnablePanoSpan] = useState(false);
